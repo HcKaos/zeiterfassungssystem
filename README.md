@@ -12,6 +12,7 @@ Ein deutsches Zeiterfassungs-Webanwendung für das Praktikantenmanagement in Unt
 ### Login & Registrierung
 <div align="center">
   <img src="bilder/login.PNG" alt="Login Interface" width="400">
+  <br><br>
   <img src="bilder/registrieren.PNG" alt="Registration Interface" width="400">
 </div>
 
