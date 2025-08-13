@@ -2,6 +2,11 @@
 
 Ein deutsches Zeiterfassungs-Webanwendung für das Praktikantenmanagement in Unternehmen. Diese Full-Stack-Anwendung bietet umfassende Zeiterfassung, Abwesenheitsverwaltung und Berichtsfunktionen.
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Node.js](https://img.shields.io/badge/node.js-22+-green.svg)](https://nodejs.org/)
+[![MySQL](https://img.shields.io/badge/mysql-8.0-blue.svg)](https://www.mysql.com/)
+
 ## Screenshots
 
 ### Login & Registrierung
