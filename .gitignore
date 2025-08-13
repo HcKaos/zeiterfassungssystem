@@ -20,9 +20,7 @@ mysql_data/
 # Temporary files
 *.tmp
 *.temp
-image.png
-berichte.png
-db.png
+
 
 # OS files
 .DS_Store
