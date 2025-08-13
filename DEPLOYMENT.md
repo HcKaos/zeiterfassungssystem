@@ -1,9 +1,5 @@
 # Production Deployment Instructions
 
-## Files Changed (Security & Bug Fixes)
-- `server.js` - Fixed SQL injection, session security, race conditions
-- `Frontend/admin.js` - Fixed XSS vulnerabilities, added HTML escaping
-- `Frontend/zeiterfassung.js` - Fixed XSS vulnerabilities, timer print bug fixes
 
 ## Database Requirements
 - Existing database schema is compatible
@@ -50,5 +46,5 @@ FRONTEND_ORIGIN=https://your-domain.com
 - Race condition fixes in timer operations
 
 ## Support
-Contact: [Your contact information]
-Date: $(date)
+Contact: Dan @Github
+Date: 2025
