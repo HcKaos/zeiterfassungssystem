@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Development tools
+.vscode/
+.idea/
+
+# Environment variables  
+.env
+.env.local
+.env.production
+.env.staging
+
+# Logs
+*.log
+
+# Docker volumes data (if any)
+mysql_data/
+
+# Temporary files
+*.tmp
+*.temp
+image.png
+berichte.png
+db.png
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/

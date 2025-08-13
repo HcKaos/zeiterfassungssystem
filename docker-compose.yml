@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: zeiterfassung-db
+      DB_NAME: Zeiterfassung
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      TZ: Europe/Berlin
+    depends_on:
+      - zeiterfassung-db
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - .:/app
+      - node_modules:/app/node_modules
+    command: >
+      sh -c "./wait-for-it.sh zeiterfassung-db:3306 --timeout=60 --strict -- node ./config/setup_prod_db.js && npm start"
+
+  zeiterfassung-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: Zeiterfassung
+      TZ: Europe/Berlin
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3001:3306"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    ports:
+      - "3002:80"
+    environment:
+      PMA_HOST: zeiterfassung-db
+    depends_on:
+      - zeiterfassung-db
+
+volumes:
+  mysql_data:
+  node_modules:

@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Zeiterfassung</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .sortable-header {
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .sortable-header:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8em;
+            color: #6c757d;
+            transition: color 0.2s;
+        }
+        .segment-row {
+            border-left: 3px solid #0d6efd;
+        }
+        .expand-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .berichte-row {
+            transition: all 0.3s ease;
+        }
+        
+        /* Admin table layout improvements */
+        #berichteBereich .table {
+            table-layout: fixed;
+        }
+        
+        #berichteBereich .table th, 
+        #berichteBereich .table td {
+            vertical-align: middle;
+        }
+        
+        #berichteBereich .table tbody td:last-child {
+            white-space: nowrap;
+            text-align: right;
+            padding-right: 1rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="images/logo-placeholder.svg" alt="Logo" height="30" class="d-inline-block align-text-top">
+                Zeiterfassung Admin Panel
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="logoutButton"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-4">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" id="dashboardLink">
+                                <i class="bi bi-bar-chart-line-fill"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="uebersichtLink">
+                                <i class="bi bi-people-fill"></i> Praktikanten
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="berichteLink">
+                                <i class="bi bi-file-text"></i> Berichte
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Dashboard Bereich -->
+                <div id="dashboardBereich">
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Admin Dashboard</h1>
+                    </div>
+                    
+                     <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    Stundenübersicht Aktive Praktikanten
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2 align-items-center">
+                                        <div class="col-md-auto mb-2 mb-md-0">
+                                            <label for="monatAuswahlChart" class="form-label d-block mb-1">Filter Monat/Jahr:</label>
+                                            <input type="month" id="monatAuswahlChart" class="form-control form-control-sm d-inline-block me-2" style="width: auto;">
+                                            <button class="btn btn-sm btn-outline-secondary" id="prevYearBtnChart"><i class="bi bi-arrow-left-short"></i></button>
+                                            <strong id="currentYearDisplayChart" class="mx-2 align-middle">YYYY</strong> 
+                                            <button class="btn btn-sm btn-outline-secondary" id="nextYearBtnChart"><i class="bi bi-arrow-right-short"></i></button>
+                                        </div>
+                                         <div class="col-md-auto">
+                                            <label for="praktikantenFilterChart" class="form-label d-block mb-1">Praktikant:</label>
+                                            <select id="praktikantenFilterChart" class="form-select form-select-sm" style="width: auto;">
+                                                <option value="">Alle Aktiven</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="btn-toolbar mb-3" role="toolbar" aria-label="Monatsauswahl Chart">
+                                        <div class="btn-group btn-group-sm flex-wrap" role="group" id="monthButtonContainerChart">
+                                            <!-- Month buttons for Chart will be generated here by JS -->
+                                        </div>
+                                    </div>
+                                    <div style="height: 400px;">
+                                        <canvas id="hoursChart"></canvas>
+                                    </div>
+                                    <div id="chartHoursThresholdInfo" class="mt-2 small text-muted"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Statistics Display Area -->
+                    <div class="row mt-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    Dashboard Statistiken
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <p class="mb-1">Registrierte Benutzer insgesamt: <strong id="directTotalRegisteredUsers">Laden...</strong></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p class="mb-1">Benutzer mit Aktivität (letzte 7 Tage): <strong id="directUsersWithRecentActivity">Laden...</strong></p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <h6>Stunden Dieser Monat</h6>
+                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped">
+                                                <thead><tr><th>Praktikant</th><th class="text-end">Stunden</th></tr></thead>
+                                                <tbody id="directHoursThisMonthInterns">
+                                                    <tr><td colspan="2" class="text-center">Laden...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">Fehlende Stunden zum Monatsziel (160h)</h6>
+                                            <div>
+                                                <input type="month" id="missingHoursMonthSelect" class="form-control form-control-sm d-inline-block me-2" style="width: auto;">
+                                                <button class="btn btn-sm btn-outline-secondary" id="prevYearBtnMissingHours"><i class="bi bi-arrow-left-short"></i></button>
+                                                <strong id="currentYearDisplayMissingHours" class="mx-2 align-middle">YYYY</strong> 
+                                                <button class="btn btn-sm btn-outline-secondary" id="nextYearBtnMissingHours"><i class="bi bi-arrow-right-short"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="btn-toolbar mb-2" role="toolbar" aria-label="Monatsauswahl Fehlende Stunden">
+                                            <div class="btn-group btn-group-sm flex-wrap" role="group" id="monthButtonContainerMissingHours">
+                                                <!-- Month buttons for Missing Hours will be generated here by JS -->
+                                            </div>
+                                        </div>
+                                        <div id="missingHoursListDisplay" class="small" style="max-height: 150px; overflow-y: auto;">
+                                            <p class="text-center">Laden...</p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div>
+                                        <h6>Stunden Letzter Monat</h6>
+                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped">
+                                                <thead><tr><th>Praktikant</th><th class="text-end">Stunden</th></tr></thead>
+                                                <tbody id="directHoursLastMonthInterns">
+                                                    <tr><td colspan="2" class="text-center">Laden...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="praktikantenBereich" style="display: none;">
+                    <!-- Praktikanten Management HTML remains unchanged -->
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Praktikanten Management</h1>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-4">
+                                <div class="card-header"><h5 class="card-title mb-0">Aktive Praktikanten</h5></div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover aligned-praktikanten-table">
+                                            <thead><tr><th>ID</th><th>Name</th><th>Rolle</th><th>Status</th><th>Verbleibende Urlaubst.</th><th>Aktionen</th></tr></thead>
+                                            <tbody id="aktivePraktikantenListe"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+<!-- Intern Full Profile Details Section -->
+                            <div id="adminInternProfileDetailsSection" class="card mb-4" style="display: none;">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Praktikanten Profildetails</h5>
+                                    <button type="button" class="btn-close float-end" aria-label="Close" id="closeAdminInternProfileDetailsButton" style="position: relative; top: -1.5rem;"></button>
+                                </div>
+                                <div class="card-body">
+                                    <h6 id="adminProfileForUser" class="mb-3">Details für: </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Vorname:</strong> <span id="adminProfileFirstName"></span></p>
+                                            <p><strong>Nachname:</strong> <span id="adminProfileLastName"></span></p>
+                                            <p><strong>E-Mail:</strong> <span id="adminProfileEmail"></span></p>
+                                            <p><strong>Adresse:</strong> <span id="adminProfileAddress"></span></p>
+                                            <p><strong>Allgemeine Notizen:</strong> <span id="adminProfileAllgemeineNotizen" class="text-muted"></span></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Telefonnummer:</strong> <span id="adminProfilePhone"></span></p>
+                                            <p><strong>Bildungsträger:</strong> <span id="adminProfileEducationProvider"></span></p>
+                                            <p><strong>Praktikumszeit 1 von-bis:</strong> <span id="adminProfileInternshipStart"></span></p>
+                                            <p><strong>Praktikumszeit 2 von-bis:</strong> <span id="adminProfileInternshipEnd"></span></p>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-2">
+                                        <span class="me-3"><strong>Jährliche Urlaubstage:</strong> <span id="adminProfileTotalUrlaubstage">N/A</span>
+                                            <button class="btn btn-sm btn-outline-secondary ms-1 py-0 px-1" id="adminEditTotalUrlaubstageBtn" title="Jährliche Urlaubstage bearbeiten"><i class="bi bi-pencil"></i></button>
+                                        </span>
+                                        <span class="me-3"><strong>Genutzte Urlaubstage:</strong> <span id="adminProfileUsedUrlaubstage">N/A</span></span>
+                                        <span><strong>Verbleibende Urlaubstage:</strong> <span id="adminProfileRemainingUrlaubstage">N/A</span></span>
+                                    </div>
+                                    <hr>
+                                                                        
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <h6 class="mb-0">Abwesenheiten</h6>
+                                        <button class="btn btn-sm btn-success" id="adminAddAbsenceBtn"><i class="bi bi-plus-circle"></i> Abwesenheit hinzufügen</button>
+                                    </div>
+                                    <div class="table-responsive mt-2">
+                                        <table class="table table-sm table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Typ</th>
+                                                    <th>Startdatum</th>
+                                                    <th>Enddatum</th>
+                                                    <th>Beschreibung</th>
+                                                    <th>Aktionen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="adminUserAbsencesTableBody">
+                                                <!-- Absences will be populated here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-header"><h5 class="card-title mb-0">Inaktive Praktikanten</h5></div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover aligned-praktikanten-table">
+                                            <thead><tr><th>ID</th><th>Name</th><th>Rolle</th><th>Status</th><th>Verbleibende Urlaubst.</th><th>Aktionen</th></tr></thead>
+                                            <tbody id="inaktivePraktikantenListe"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="berichteBereich" style="display: none;">
+                    <!-- Berichte Management HTML remains unchanged -->
+                    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                        <h1 class="h2">Tätigkeitsberichte</h1>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Filter Berichte</h5>
+                                    <div class="mt-2">
+                                        <label for="monatAuswahlBerichte" class="form-label me-2">Monat/Jahr:</label>
+                                        <input type="month" id="monatAuswahlBerichte" class="form-control-sm d-inline-block me-3" style="width: auto;">
+                                        <button class="btn btn-sm btn-outline-secondary" id="prevYearBtnBerichte"><i class="bi bi-arrow-left-short"></i></button>
+                                        <strong id="currentYearDisplayBerichte" class="mx-2 align-middle">YYYY</strong> 
+                                        <button class="btn btn-sm btn-outline-secondary" id="nextYearBtnBerichte"><i class="bi bi-arrow-right-short"></i></button>
+                                    </div>
+                                    <div class="btn-toolbar my-2" role="toolbar" aria-label="Monatsauswahl Berichte">
+                                        <div class="btn-group btn-group-sm flex-wrap" role="group" id="monthButtonContainerBerichte">
+                                            <!-- Month buttons for Berichte tab -->
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label for="praktikantenFilterBerichte" class="form-label me-2">Praktikant:</label>
+                                        <select id="praktikantenFilterBerichte" class="form-select-sm d-inline-block me-3" style="width:fit-content;"><option value="">Alle Praktikanten (Aktive)</option></select>
+                                        <button class="btn btn-primary btn-sm" id="druckeBerichteBtn"><i class="bi bi-printer"></i> Berichte drucken</button>
+                                        <button class="btn btn-success btn-sm float-end" id="adminAddNewBerichtBtn" style="margin-left: 10px;"><i class="bi bi-plus-circle"></i> Neuen Eintrag hinzufügen</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover">
+                                            <thead><tr><th class="sortable-header" data-sort="datum" style="cursor: pointer; width: 12%;">Datum <span class="sort-indicator">⇅</span></th><th class="sortable-header" data-sort="praktikant" style="cursor: pointer; width: 15%;">Praktikant <span class="sort-indicator">⇅</span></th><th class="sortable-header" data-sort="startzeit" style="cursor: pointer; width: 10%;">Startzeit <span class="sort-indicator">⇅</span></th><th class="sortable-header" data-sort="endzeit" style="cursor: pointer; width: 8%;">Endzeit <span class="sort-indicator">⇅</span></th><th class="sortable-header" data-sort="dauer" style="cursor: pointer; width: 8%;">Dauer <span class="sort-indicator">⇅</span></th><th class="sortable-header" data-sort="bericht" style="cursor: pointer; width: 27%;">Tätigkeitsbericht <span class="sort-indicator">⇅</span></th><th style="width: 20%; text-align: right;">Aktionen</th></tr></thead>
+                                            <tbody id="berichteTabelle"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </main>
+        </div>
+    </div>
+    
+    <!-- Other Modals (Bericht Details, Bericht Edit, Praktikant Details, Praktikant Edit) -->
+    <div class="modal fade" id="berichtModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Berichtsdetails</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p><strong>Praktikant:</strong> <span id="modalPraktikantNameBericht"></span></p><p><strong>Datum:</strong> <span id="modalDatumBericht"></span></p><p><strong>Arbeitszeit:</strong> <span id="modalZeitBericht"></span></p><hr><p id="modalBerichtText"></p></div></div></div></div>
+    <div class="modal fade" id="berichtBearbeitenModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Bericht bearbeiten (Admin)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="adminBerichtBearbeitenForm"><input type="hidden" id="adminEditBerichtId"><div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="adminEditStartzeit" class="form-label">Startzeit</label>
+                <input type="time" class="form-control" id="adminEditStartzeit" required>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="adminEditEndzeit" class="form-label">Endzeit</label>
+                <input type="time" class="form-control" id="adminEditEndzeit" required>
+            </div>
+        </div>
+        <div class="col-md-4">
+             <div class="mb-3">
+                <label for="adminEditDauer" class="form-label">Dauer (hh:mm)</label>
+                <input type="text" class="form-control" id="adminEditDauer" readonly> <!-- Duration is read-only -->
+            </div>
+        </div>
+    </div>
+    <div class="mb-3"><label for="adminEditBerichtTextarea" class="form-label">Berichtstext</label><textarea class="form-control" id="adminEditBerichtTextarea" rows="5" required></textarea></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button><button type="button" class="btn btn-primary" id="adminSaveEditedBerichtButton">Speichern</button></div></div></div></div>
+    <div class="modal fade" id="praktikantModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Praktikant Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p><strong>ID:</strong> <span id="modalPraktikantId"></span></p><p><strong>Name:</strong> <span id="modalPraktikantName"></span></p><p><strong>Rolle:</strong> <span id="modalPraktikantRolle"></span></p><p><strong>Status:</strong> <span id="modalPraktikantStatus"></span></p></div></div></div></div>
+    <div class="modal fade" id="praktikantBearbeitenModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Praktikant bearbeiten</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="praktikantBearbeitenForm"><input type="hidden" id="editPraktikantId"><div class="row"><div class="col-md-6"><div class="mb-3"><label for="editVorname" class="form-label">Vorname</label><input type="text" class="form-control" id="editVorname" required></div></div><div class="col-md-6"><div class="mb-3"><label for="editNachname" class="form-label">Nachname</label><input type="text" class="form-control" id="editNachname" required></div></div></div><div class="row"><div class="col-md-6"><div class="mb-3"><label for="editEmail" class="form-label">E-Mail</label><input type="email" class="form-control" id="editEmail" required></div></div><div class="col-md-6"><div class="mb-3"><label for="editPasswort" class="form-label">Neues Passwort (optional)</label><input type="password" class="form-control" id="editPasswort" autocomplete="new-password"></div></div></div><div class="row"><div class="col-md-6"><div class="mb-3"><label for="editRolle" class="form-label">Rolle</label><select class="form-control" id="editRolle" disabled><option value="Praktikant">Praktikant</option><option value="Betreuer">Betreuer</option></select></div></div><div class="col-md-6"><div class="mb-3"><label for="editAdresse" class="form-label">Adresse</label><input type="text" class="form-control" id="editAdresse"></div></div></div><div class="row"><div class="col-md-6"><div class="mb-3"><label for="editTelefonnummer" class="form-label">Telefonnummer</label><input type="tel" class="form-control" id="editTelefonnummer"></div></div><div class="col-md-6"><div class="mb-3"><label for="editBildungstraeger" class="form-label">Bildungsträger</label><input type="text" class="form-control" id="editBildungstraeger"></div></div></div><div class="row"><div class="col-md-6"><div class="mb-3"><label for="editPraktikumszeit1" class="form-label">Praktikumszeit 1 von-bis</label><input type="text" class="form-control" id="editPraktikumszeit1" placeholder="TT.MM.JJJJ - TT.MM.JJJJ"></div></div><div class="col-md-6"><div class="mb-3"><label for="editPraktikumszeit2" class="form-label">Praktikumszeit 2 von-bis (optional)</label><input type="text" class="form-control" id="editPraktikumszeit2" placeholder="TT.MM.JJJJ - TT.MM.JJJJ"></div></div></div><div class="mb-3"><label for="editAllgemeineNotizen" class="form-label">Allgemeine Notizen</label><textarea class="form-control" id="editAllgemeineNotizen" rows="3"></textarea></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button><button type="button" class="btn btn-primary" id="savePraktikantEditButton">Speichern</button></div></div></div></div>
+
+    <!-- Modal for Admin to Manage Intern Absences -->
+    <div class="modal fade" id="adminManageAbsenceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adminManageAbsenceModalTitle">Abwesenheit für Praktikant verwalten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="adminManageAbsenceForm">
+                        <input type="hidden" id="adminAbsenceEditId">
+                        <input type="hidden" id="adminAbsenceUserId">
+                        <p>Für: <strong id="adminAbsenceForUserName"></strong></p>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="adminAbsenceStartDate" class="form-label">Startdatum</label>
+                                <input type="date" class="form-control" id="adminAbsenceStartDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="adminAbsenceEndDate" class="form-label">Enddatum</label>
+                                <input type="date" class="form-control" id="adminAbsenceEndDate" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adminAbsenceType" class="form-label">Abwesenheitstyp</label>
+                            <select class="form-select" id="adminAbsenceType" required>
+                                <option value="Urlaub">Urlaub</option>
+                                <option value="Krankheit">Krankheit</option>
+                                <!-- Weitere Typen bei Bedarf -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="adminAbsenceDescription" class="form-label">Beschreibung (optional)</label>
+                            <textarea class="form-control" id="adminAbsenceDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="adminSaveAbsenceButton">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+        <!-- Modal for Admin to Add New Bericht Entry -->
+        <div class="modal fade" id="adminAddBerichtModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Neuen Tätigkeitseintrag hinzufügen (Admin)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="adminAddBerichtForm">
+                            <div class="mb-3">
+                                <label for="adminAddBerichtPraktikant" class="form-label">Praktikant</label>
+                                <select class="form-select" id="adminAddBerichtPraktikant" required>
+                                    <option value="" disabled selected>Praktikant auswählen...</option>
+                                    <!-- Options will be populated by JS -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="adminAddBerichtTyp" class="form-label">Typ</label>
+                                <select class="form-select" id="adminAddBerichtTyp">
+                                    <option value="Arbeit" selected>Arbeit</option>
+                                    <option value="Krankheit">Krankheit</option>
+                                    <option value="Urlaub">Urlaub</option>
+                                </select>
+                            </div>
+                            <div class="mb-3"> <!-- Date is always visible -->
+                                <label for="adminAddBerichtDatum" class="form-label">Datum</label>
+                                <input type="date" class="form-control" id="adminAddBerichtDatum" required>
+                            </div>
+
+                            <div id="adminAddBerichtArbeitDetails"> <!-- Container for Arbeit-specific fields -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="adminAddBerichtStartzeit" class="form-label">Startzeit</label>
+                                            <input type="time" class="form-control" id="adminAddBerichtStartzeit">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="adminAddBerichtEndzeit" class="form-label">Endzeit</label>
+                                            <input type="time" class="form-control" id="adminAddBerichtEndzeit">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="adminAddBerichtDauer" class="form-label">Dauer (hh:mm)</label>
+                                            <input type="text" class="form-control" id="adminAddBerichtDauer" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="adminAddBerichtTextarea" class="form-label" id="adminAddBerichtTextareaLabel">Berichtstext</label>
+                                <textarea class="form-control" id="adminAddBerichtTextarea" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                        <button type="button" class="btn btn-primary" id="adminSaveNewBerichtButton">Speichern</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="logger.js"></script>
+    <script>
+function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/"/g, '"')
+                .replace(/'/g, '&#039;');
+        }
+        // --- Globals ---
+        let alleBerichteGlobal = [];
+        let hoursBarChart = null;
+        const MONTHLY_TARGET_HOURS = 160; // Define globally for reuse
+
+        // --- Logout ---
+        async function logout() {
+            try {
+                const response = await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include" });
+                if (!response.ok) throw new Error("Logout fehlgeschlagen");
+                localStorage.removeItem("userRole"); 
+                window.location.href = "/login.html";
+            } catch (err) { logger.error("Logout Fehler:", err); alert("Logout fehlgeschlagen."); }
+        }
+
+        // --- Dashboard Data Loading (General Stats & Fixed Month Stats) ---
+        async function ladeDashboardDaten() {
+            try {
+                const response = await fetch('/api/admin/dashboard/summary', { method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) { alert("Sitzung abgelaufen oder Zugriff verweigert. Bitte neu einloggen."); window.location.href = '/login.html'; return; }
+                    throw new Error('Fehler beim Laden der Dashboard-Daten (Status: ' + response.status + ')');
+                }
+                const result = await response.json();
+                if (result.success && result.data) {
+                    const data = result.data;
+                    
+                    document.getElementById('directTotalRegisteredUsers').textContent = data.totalRegisteredUsers || '0';
+                    document.getElementById('directUsersWithRecentActivity').textContent = data.usersWithRecentActivity || '0';
+
+                    const thisMonthBody = document.getElementById('directHoursThisMonthInterns');
+                    thisMonthBody.innerHTML = ''; 
+                    if (data.hoursPerInternThisMonth && data.hoursPerInternThisMonth.length > 0) {
+                        data.hoursPerInternThisMonth.forEach(intern => {
+                            const row = thisMonthBody.insertRow();
+                            const displayName = (intern.vorname && intern.nachname) ? `${intern.vorname} ${intern.nachname}` : intern.benutzername;
+                            row.insertCell().textContent = displayName;
+                            row.insertCell().textContent = decimalHoursToHHMM(intern.totalHours);
+                            row.cells[1].classList.add('text-end');
+                        });
+                    } else {
+                        thisMonthBody.innerHTML = '<tr><td colspan="2" class="text-center">Keine Stunden für diesen Monat erfasst.</td></tr>';
+                    }
+
+                    const lastMonthBody = document.getElementById('directHoursLastMonthInterns');
+                    lastMonthBody.innerHTML = ''; 
+                    if (data.hoursPerInternLastMonth && data.hoursPerInternLastMonth.length > 0) {
+                        data.hoursPerInternLastMonth.forEach(intern => {
+                            const row = lastMonthBody.insertRow();
+                            const displayName = (intern.vorname && intern.nachname) ? `${intern.vorname} ${intern.nachname}` : intern.benutzername;
+                            row.insertCell().textContent = displayName;
+                            row.insertCell().textContent = decimalHoursToHHMM(intern.totalHours);
+                            row.cells[1].classList.add('text-end');
+                        });
+                    } else {
+                        lastMonthBody.innerHTML = '<tr><td colspan="2" class="text-center">Keine Stunden für letzten Monat erfasst.</td></tr>';
+                    }
+                    // Note: Missing hours for the *current* month is handled by ladeUndZeigeFehlendeStunden initially
+                } else { throw new Error(result.message || 'Fehlerhafte Daten vom Server für Dashboard'); }
+            } catch (error) {
+                logger.error('Fehler beim Laden der Dashboard-Daten:', error);
+                document.getElementById('directTotalRegisteredUsers').textContent = 'Fehler';
+                document.getElementById('directUsersWithRecentActivity').textContent = 'Fehler';
+                document.getElementById('directHoursThisMonthInterns').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Daten konnten nicht geladen werden.</td></tr>';
+                document.getElementById('directHoursLastMonthInterns').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Daten konnten nicht geladen werden.</td></tr>';
+            }
+        }
+
+        // --- Missing Hours Data Loading & Display ---
+        async function ladeUndZeigeFehlendeStunden(selectedMonth) {
+            const missingHoursListEl = document.getElementById('missingHoursListDisplay');
+            if (!missingHoursListEl) {
+                logger.error("Element #missingHoursListDisplay nicht gefunden.");
+                return;
+            }
+            missingHoursListEl.innerHTML = '<p class="text-center">Laden...</p>'; // Show loading indicator
+
+            if (!selectedMonth) {
+                logger.warn("Kein Monat für fehlende Stunden ausgewählt.");
+                missingHoursListEl.innerHTML = '<p class="text-center">Bitte Monat auswählen.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/dashboard/intern-hours?month=${selectedMonth}`, { 
+                    method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include' 
+                });
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) { alert("Sitzung abgelaufen. Bitte neu einloggen."); window.location.href = '/login.html'; return; }
+                    throw new Error(`Fehler beim Laden der Stundendaten für fehlende Stunden (Status: ${response.status})`);
+                }
+                const result = await response.json();
+                missingHoursListEl.innerHTML = ''; // Clear loading/previous
+
+                if (result.success && result.data) {
+                    const internHoursData = result.data;
+                    let foundMissing = false;
+                    if (internHoursData.length > 0) {
+                        internHoursData.forEach(intern => {
+                            // The backend now sends 'totalHours' as the sum of work and vacation.
+                            const combinedHours = parseFloat(intern.totalHours);
+                            const missingHours = MONTHLY_TARGET_HOURS - combinedHours;
+                            if (missingHours > 0) {
+                                const p = document.createElement('p');
+                                p.classList.add('mb-1');
+                                const displayName = (intern.vorname && intern.nachname) ? `${intern.vorname} ${intern.nachname}` : intern.benutzername;
+                                // Using textContent for safety, constructing with template literals and then assigning
+                                const strongPraktikant = document.createElement('strong');
+                                strongPraktikant.textContent = displayName;
+                                const strongMissing = document.createElement('strong');
+                                strongMissing.className = 'text-danger';
+                                strongMissing.textContent = missingHours.toFixed(2);
+
+                                p.textContent = `Praktikant: `;
+                                p.appendChild(strongPraktikant);
+                                p.append(`, Fehlende Stunden bis ${MONTHLY_TARGET_HOURS}h: `);
+                                p.appendChild(strongMissing);
+                                missingHoursListEl.appendChild(p);
+                                foundMissing = true;
+                            }
+                        });
+                    }
+                    if (!foundMissing) {
+                        missingHoursListEl.innerHTML = `<p class="text-success mb-1">Alle aktiven Praktikanten haben das Monatsziel von ${MONTHLY_TARGET_HOURS} Stunden für ${formatMonthName(selectedMonth)} erreicht oder überschritten.</p>`;
+                    }
+                    if (internHoursData.length === 0) {
+                         missingHoursListEl.innerHTML = `<p class="text-center">Keine Stundendaten für ${formatMonthName(selectedMonth)} vorhanden.</p>`;
+                    }
+                } else {
+                    throw new Error(result.message || 'Fehlerhafte Daten vom Server für fehlende Stunden.');
+                }
+            } catch (error) {
+                logger.error('Fehler in ladeUndZeigeFehlendeStunden:', error);
+                missingHoursListEl.innerHTML = `<p class="text-center text-danger">Fehler beim Laden der Daten für fehlende Stunden für ${formatMonthName(selectedMonth)}.</p>`;
+            }
+        }
+
+
+        // --- Sidebar Navigation & Content Toggling ---
+        function setActiveSidebarLink(activeLinkId) {
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => link.classList.remove('active'));
+            const activeLink = document.getElementById(activeLinkId);
+            if (activeLink) activeLink.classList.add('active');
+        }
+        function showSection(sectionId) {
+            ['dashboardBereich', 'praktikantenBereich', 'berichteBereich'].forEach(id => {
+                const section = document.getElementById(id);
+                if (section) section.style.display = (id === sectionId) ? 'block' : 'none';
+            });
+        }
+
+        // --- Praktikanten Management ---
+        async function ladePraktikanten() {
+            try {
+                const response = await fetch("/api/praktikanten", { method: "GET", headers: { "Content-Type": "application/json" }, credentials: "include" });
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) { alert("Sitzung abgelaufen oder Zugriff verweigert."); window.location.href = '/login.html'; return; }
+                    throw new Error(`Ladefehler Praktikanten (Status: ${response.status})`);
+                }
+                const praktikanten = await response.json();
+                const aktiveListe = document.getElementById("aktivePraktikantenListe");
+                const inaktiveListe = document.getElementById("inaktivePraktikantenListe");
+
+                if (!aktiveListe || !inaktiveListe) { console.error("Listen-Elemente für Praktikanten nicht gefunden."); return; }
+                aktiveListe.innerHTML = "";
+                inaktiveListe.innerHTML = "";
+
+                if (!praktikanten || praktikanten.length === 0) {
+                    aktiveListe.innerHTML = '<tr><td colspan="6" class="text-center">Keine Praktikanten vorhanden.</td></tr>';
+                    inaktiveListe.innerHTML = '<tr><td colspan="6" class="text-center">Keine Praktikanten vorhanden.</td></tr>';
+                    return;
+                }
+                
+                let aktiveCount = 0;
+                let inaktiveCount = 0;
+
+                praktikanten.forEach(p => {
+                    const zeile = document.createElement("tr");
+                    const displayName = (p.vorname && p.nachname) ? `${p.vorname} ${p.nachname}` : (p.email || `ID: ${p.id}`);
+                    const escapedDisplayName = displayName.replace(/'/g, "\\'");
+                    const escapedRolle = (p.rolle || '').replace(/'/g, "\\'");
+                    const isBetreuer = p.rolle === 'Betreuer';
+
+                    if (isBetreuer && p.status === 'aktiv') { // Betreuer are typically always active for this list
+                        zeile.style.backgroundColor = 'rgba(200, 255, 200, 0.3)'; // Light green background
+                    }
+
+                    let aktionenHtml = `
+                        <button class="btn btn-sm btn-primary js-praktikant-full-profile-button" data-id="${p.id}" data-displayname="${escapedDisplayName}" data-status="${p.status || 'aktiv'}" ${isBetreuer && p.status !== 'aktiv' ? 'disabled' : ''}>
+                            <i class="bi bi-person-lines-fill"></i> Profil
+                        </button>
+                        <button class="btn btn-sm btn-warning js-praktikant-edit-button" data-id="${p.id}" data-displayname="${escapedDisplayName}" data-rolle="${escapedRolle}">
+                            <i class="bi bi-pencil"></i> Bearbeiten
+                        </button>`;
+                    
+                    if (p.status === 'aktiv') {
+                         if (!isBetreuer) {
+                            aktionenHtml += `
+                            <button class="btn btn-sm btn-outline-secondary js-praktikant-set-status-button" data-id="${p.id}" data-newstatus="inaktiv">
+                                <i class="bi bi-person-dash"></i> Inaktiv
+                            </button>`;
+                         }
+                    } else {
+                         aktionenHtml += `
+                            <button class="btn btn-sm btn-outline-success js-praktikant-set-status-button" data-id="${p.id}" data-newstatus="aktiv">
+                                <i class="bi bi-person-check"></i> Aktiv
+                            </button>
+                            <button class="btn btn-sm btn-danger js-praktikant-delete-button" data-id="${p.id}" data-displayname="${escapedDisplayName}">
+                                <i class="bi bi-trash"></i> Löschen
+                            </button>`;
+                    }
+                    
+                    zeile.innerHTML = `
+                        <td>${p.id}</td>
+                        <td>${displayName || 'N/A'}</td>
+                        <td>${p.rolle || 'N/A'}</td>
+                        <td><span class="badge bg-${p.status === 'aktiv' ? 'success' : 'secondary'}">${p.status || 'N/A'}</span></td>
+                        <td>${p.remainingUrlaubstage !== null && p.remainingUrlaubstage !== undefined ? Math.round(p.remainingUrlaubstage) : 'N/A'}</td>
+                        <td><div class="btn-group btn-group-sm" role="group">${aktionenHtml}</div></td>`;
+                    
+                    if (p.status === 'aktiv') {
+                        aktiveListe.appendChild(zeile);
+                        aktiveCount++;
+                    } else {
+                        inaktiveListe.appendChild(zeile);
+                        inaktiveCount++;
+                    }
+                });
+
+                if (aktiveCount === 0) aktiveListe.innerHTML = '<tr><td colspan="6" class="text-center">Keine aktiven Benutzer.</td></tr>';
+                if (inaktiveCount === 0) inaktiveListe.innerHTML = '<tr><td colspan="6" class="text-center">Keine inaktiven Praktikanten.</td></tr>';
+                
+                attachPraktikantenButtonListeners();
+            } catch (error) {
+                logger.error("Fehler in ladePraktikanten:", error);
+                const aktiveListe = document.getElementById("aktivePraktikantenListe");
+                const inaktiveListe = document.getElementById("inaktivePraktikantenListe");
+                if(aktiveListe) aktiveListe.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Fehler beim Laden der aktiven Praktikanten.</td></tr>';
+                if(inaktiveListe) inaktiveListe.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Fehler beim Laden der inaktiven Praktikanten.</td></tr>';
+            }
+        }
+        function attachPraktikantenButtonListeners() {
+            document.querySelectorAll('.js-praktikant-full-profile-button, .js-praktikant-edit-button, .js-praktikant-set-status-button, .js-praktikant-delete-button').forEach(b => {
+                const clone = b.cloneNode(true);
+                if (b.parentNode) b.parentNode.replaceChild(clone, b);
+            });
+            document.querySelectorAll('.js-praktikant-full-profile-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    if(this.disabled) return;
+                    // Removed status check to allow viewing profiles of inactive Praktikanten
+                    zeigeAdminInternProfil(this.dataset.id, this.dataset.displayname); // Use displayname
+                });
+            });
+            document.querySelectorAll('.js-praktikant-edit-button').forEach(button => {
+                button.addEventListener('click', function() { if(this.disabled) return; bearbeitePraktikantModal(this.dataset.id, this.dataset.displayname, this.dataset.rolle); }); // Use displayname
+            });
+            document.querySelectorAll('.js-praktikant-set-status-button').forEach(button => {
+                button.addEventListener('click', function() { if(this.disabled) return; setPraktikantStatus(this.dataset.id, this.dataset.newstatus); });
+            });
+            document.querySelectorAll('.js-praktikant-delete-button').forEach(button => {
+                button.addEventListener('click', function() { if(this.disabled) return; loeschePraktikantConfirm(this.dataset.id, this.dataset.displayname); }); // Use displayname
+            });
+        }
+        function zeigePraktikantDetails(id, displayName, rolle, status) { // Changed parameter name
+            document.getElementById("modalPraktikantId").textContent = id || 'N/A';
+            document.getElementById("modalPraktikantName").textContent = displayName || 'N/A';
+            document.getElementById("modalPraktikantRolle").textContent = rolle || 'N/A';
+            document.getElementById("modalPraktikantStatus").textContent = status || 'N/A';
+            new bootstrap.Modal(document.getElementById("praktikantModal")).show();
+        }
+        /**
+         * Check if this admin is the last one and show warning
+         */
+        async function checkAndWarnLastAdmin(rolleSelect, userId) {
+            try {
+                // Get all active admins
+                const response = await fetch('/api/praktikanten', { credentials: 'include' });
+                if (!response.ok) {
+                    console.error('Failed to fetch users for admin count check');
+                    return;
+                }
+                
+                const users = await response.json();
+                const activeAdmins = users.filter(user => user.rolle === 'Betreuer' && user.status === 'Aktiv');
+                
+                // Check if changing THIS user's role would leave us with no admins
+                // Only prevent if this user is currently an admin AND there's only 1 admin total
+                const currentUser = users.find(user => user.id == userId);
+                const isCurrentlyAdmin = currentUser && currentUser.rolle === 'Betreuer' && currentUser.status === 'Aktiv';
+                const wouldBeLastAdmin = isCurrentlyAdmin && activeAdmins.length <= 1;
+                
+                // Only show warning if changing this specific user would leave no admins
+                if (wouldBeLastAdmin) {
+                    // Add visual warning
+                    const warningDiv = document.getElementById('lastAdminWarning');
+                    if (warningDiv) {
+                        warningDiv.style.display = 'block';
+                    } else {
+                        // Create warning if it doesn't exist
+                        const warning = document.createElement('div');
+                        warning.id = 'lastAdminWarning';
+                        warning.className = 'alert alert-warning mt-2';
+                        warning.innerHTML = '<i class="bi bi-exclamation-triangle"></i> <strong>Warnung:</strong> Dies ist der letzte aktive Administrator. Die Rolle kann nicht geändert werden.';
+                        rolleSelect.parentNode.appendChild(warning);
+                    }
+                    
+                    // Disable role dropdown 
+                    rolleSelect.disabled = true;
+                    
+                    // Add change listener to show alert if they try to change
+                    const originalValue = rolleSelect.value;
+                    rolleSelect.addEventListener('change', function() {
+                        if (this.value !== originalValue) {
+                            alert('Die Rolle kann nicht geändert werden: Es muss mindestens ein aktiver Administrator im System vorhanden sein.');
+                            this.value = originalValue;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error checking admin count:', error);
+            }
+        }
+
+        async function bearbeitePraktikantModal(id, displayName, rolle) {
+            document.getElementById("editPraktikantId").value = id;
+            // benutzername input is removed from modal HTML, so no need to set its value.
+            const rolleSelect = document.getElementById("editRolle");
+            rolleSelect.value = rolle;
+            // Temporarily enable to set value, will be disabled later if it's the main admin
+            rolleSelect.disabled = false;
+            document.getElementById("editPasswort").value = "";
+
+            // Clear any existing warning
+            const existingWarning = document.getElementById('lastAdminWarning');
+            if (existingWarning) {
+                existingWarning.style.display = 'none';
+            }
+
+            // Clear previous values or set to loading
+            document.getElementById("editVorname").value = '';
+            document.getElementById("editNachname").value = '';
+            document.getElementById("editEmail").value = ''; // Clear email field
+            document.getElementById("editAdresse").value = '';
+            document.getElementById("editTelefonnummer").value = '';
+            document.getElementById("editBildungstraeger").value = '';
+            document.getElementById("editPraktikumszeit1").value = '';
+            document.getElementById("editPraktikumszeit2").value = '';
+            document.getElementById("editAllgemeineNotizen").value = '';
+
+            try {
+                const response = await fetch(`/api/admin/users/${id}/profile`, { credentials: 'include' });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Unbekannter Fehler beim Laden der Profildaten für Bearbeitung.' }));
+                    throw new Error(errorData.message || `Fehler ${response.status}`);
+                }
+                const result = await response.json();
+                if (result.success && result.profile) {
+                    const profile = result.profile;
+                    // The "editBenutzername" field is removed from the modal, so no need to populate it.
+                    document.getElementById("editVorname").value = profile.vorname || '';
+                    document.getElementById("editNachname").value = profile.nachname || '';
+                    document.getElementById("editEmail").value = profile.email || ''; // Populate email field
+                    document.getElementById("editAdresse").value = profile.adresse || '';
+                    document.getElementById("editTelefonnummer").value = profile.telefonnummer || '';
+                    document.getElementById("editBildungstraeger").value = profile.bildungstraeger || '';
+                    document.getElementById("editPraktikumszeit1").value = profile.praktikumszeit_1_von_bis || '';
+                    document.getElementById("editPraktikumszeit2").value = profile.praktikumszeit_2_von_bis || '';
+                    document.getElementById("editAllgemeineNotizen").value = profile.allgemeine_notizen || '';
+
+                   // Disable role and email change for the main admin
+                   const emailInput = document.getElementById("editEmail");
+                   const mainAdminEmail = 'admin@example.com'; // Should match backend configuration
+                   if (profile.email === mainAdminEmail) {
+                       rolleSelect.disabled = true;
+                       if(emailInput) emailInput.disabled = true;
+                   } else {
+                       rolleSelect.disabled = false; // Ensure it's enabled for others, even if they are 'Betreuer'
+                       if(emailInput) emailInput.disabled = false;
+                   }
+
+                   // Check if this is the last admin and add warning
+                   if (profile.rolle === 'Betreuer') {
+                       await checkAndWarnLastAdmin(rolleSelect, id);
+                   }
+
+                } else {
+                    alert("Profildaten für Bearbeitung konnten nicht vollständig geladen werden: " + (result.message || "Unbekanntes Format."));
+                    // Fallback: if profile load fails, disable role change for safety if current role is Betreuer
+                    // This maintains previous behavior if the email check isn't possible.
+                    if (rolle === 'Betreuer') {
+                        rolleSelect.disabled = true;
+                    }
+                }
+            } catch (error) {
+                console.error("Fehler beim Laden der Profildaten für Bearbeitungsmodal:", error);
+                alert("Fehler beim Laden der Profildaten für Bearbeitung: " + error.message + "\nModal wird mit Basisdaten geöffnet.");
+                // Fallback in case of network or other errors before profile data is available
+                if (rolle === 'Betreuer') {
+                    rolleSelect.disabled = true;
+                }
+            }
+
+            new bootstrap.Modal(document.getElementById("praktikantBearbeitenModal")).show();
+        }
+        async function savePraktikantEdit() {
+            const id = document.getElementById("editPraktikantId").value;
+            const rolle = document.getElementById("editRolle").value;
+            const email = document.getElementById("editEmail").value;
+            const passwort = document.getElementById("editPasswort").value;
+            
+            const vorname = document.getElementById("editVorname").value;
+            const nachname = document.getElementById("editNachname").value;
+            const adresse = document.getElementById("editAdresse").value;
+            const telefonnummer = document.getElementById("editTelefonnummer").value;
+            const bildungstraeger = document.getElementById("editBildungstraeger").value;
+            const praktikumszeit_1_von_bis = document.getElementById("editPraktikumszeit1").value;
+            const praktikumszeit_2_von_bis = document.getElementById("editPraktikumszeit2").value;
+            const allgemeine_notizen = document.getElementById("editAllgemeineNotizen").value;
+
+            // benutzername is no longer part of the form or request body
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
+                return;
+            }
+            const requestBody = {
+                rolle,
+                email,
+                vorname,
+                nachname,
+                adresse,
+                telefonnummer,
+                bildungstraeger,
+                praktikumszeit_1_von_bis,
+                praktikumszeit_2_von_bis,
+                allgemeine_notizen,
+                passwort: passwort || undefined // Keep optional password update
+            };
+
+            try {
+                const response = await fetch(`/api/praktikanten/${id}`, {
+                    method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
+                    body: JSON.stringify(requestBody)
+                });
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({message: "Unbekannter Fehler"}));
+                    throw new Error(errData.message || "Fehler beim Speichern des Praktikanten");
+                }
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById("praktikantBearbeitenModal"));
+                if (modalInstance) modalInstance.hide();
+                ladePraktikanten(); 
+                alert("Praktikant erfolgreich aktualisiert");
+            } catch (error) { logger.error("Fehler beim Speichern des Praktikanten:", error); alert("Fehler: " + error.message); }
+        }
+        async function setPraktikantStatus(id, newStatus) {
+            if (!confirm(`Möchten Sie den Status dieses Praktikanten wirklich auf '${newStatus}' ändern?`)) return;
+            try {
+                const response = await fetch(`/api/praktikanten/${id}/status`, {
+                    method: "PUT", headers: { "Content-Type": "application/json" }, credentials: "include",
+                    body: JSON.stringify({ status: newStatus })
+                });
+                 if (!response.ok) {
+                    const errData = await response.json().catch(() => ({message: "Unbekannter Fehler"}));
+                    throw new Error(errData.message || "Fehler beim Ändern des Status");
+                }
+                alert("Status erfolgreich geändert.");
+                ladePraktikanten();
+            } catch (error) { logger.error("Fehler bei Statusänderung:", error); alert("Fehler: " + error.message); }
+        }
+        function loeschePraktikantConfirm(id, benutzername) {
+            const message = `Möchten Sie den Praktikanten "${benutzername}" wirklich DAUERHAFT aus der Datenbank löschen? Diese Aktion kann nicht rückgängig gemacht werden. Wenn der Praktikant inaktiv ist und Berichte hat, bleiben diese Berichte als verwaiste Einträge in der Datenbank.`;
+            if (confirm(message)) {
+                loeschePraktikant(id);
+            }
+        }
+        async function loeschePraktikant(id) {
+            try {
+                const response = await fetch(`/api/praktikanten/${id}`, { method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include" });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: "Unbekannter Fehler beim Löschen" }));
+                    throw new Error(errorData.message || "Fehler beim Löschen des Praktikanten");
+                }
+                alert("Praktikant erfolgreich gelöscht.");
+                ladePraktikanten();
+            } catch (error) { logger.error("Fehler beim Löschen des Praktikanten:", error); alert(error.message); }
+        }
+
+        async function zeigeAdminInternProfil(internId, displayNameFromButton) {
+            logger.debug(`Zeige volles Profil für ID: ${internId}, Name: ${displayNameFromButton}`);
+            const profileSection = document.getElementById('adminInternProfileDetailsSection');
+            if (!profileSection) {
+                console.error("Admin Intern Profile Details Section nicht gefunden!");
+                return;
+            }
+            
+            let result = null; // Declare result here
+            let currentDisplayNameForAbsence = displayNameFromButton; // Fallback
+
+            // Fetch and display full profile details
+            try {
+                const response = await fetch(`/api/admin/users/${internId}/profile`, { credentials: 'include' });
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) { alert("Sitzung abgelaufen oder Zugriff verweigert."); window.location.href = '/login.html'; return; }
+                    throw new Error(`Fehler beim Laden der Profildaten für Admin (Status: ${response.status})`);
+                }
+                const result = await response.json();
+                if (result.success && result.profile) {
+                    const profile = result.profile;
+                    currentDisplayNameForAbsence = (profile.vorname && profile.nachname) ? `${profile.vorname} ${profile.nachname}` : (profile.email || `ID: ${profile.id}`);
+                    document.getElementById('adminProfileForUser').textContent = `Details für: ${currentDisplayNameForAbsence} (ID: ${profile.id || internId})`;
+                    document.getElementById('adminProfileFirstName').textContent = profile.vorname || 'N/A';
+                    document.getElementById('adminProfileLastName').textContent = profile.nachname || 'N/A';
+                    document.getElementById('adminProfileEmail').textContent = profile.email || 'N/A';
+                    document.getElementById('adminProfileAddress').textContent = profile.adresse || 'N/A';
+                    document.getElementById('adminProfilePhone').textContent = profile.telefonnummer || 'N/A';
+                    document.getElementById('adminProfileEducationProvider').textContent = profile.bildungstraeger || 'N/A';
+                    document.getElementById('adminProfileInternshipStart').textContent = profile.praktikumszeit_1_von_bis || 'N/A';
+                    document.getElementById('adminProfileInternshipEnd').textContent = profile.praktikumszeit_2_von_bis || 'N/A';
+                    document.getElementById('adminProfileAllgemeineNotizen').textContent = profile.allgemeine_notizen || 'Keine Notizen vorhanden.';
+                    
+                    // Populate total annual vacation days from profile data
+                    const totalUrlaubstage = profile.total_urlaubstage_annually !== null && profile.total_urlaubstage_annually !== undefined ? profile.total_urlaubstage_annually : 'N/A';
+                    document.getElementById('adminProfileTotalUrlaubstage').textContent = totalUrlaubstage;
+                    
+                    // Populate used and remaining vacation days
+                    document.getElementById('adminProfileUsedUrlaubstage').textContent = profile.usedUrlaubstageThisYear !== undefined ? profile.usedUrlaubstageThisYear : 'N/A';
+                    document.getElementById('adminProfileRemainingUrlaubstage').textContent = profile.remainingUrlaubstage !== undefined ? profile.remainingUrlaubstage : 'N/A';
+
+                    const editUrlaubstageBtn = document.getElementById('adminEditTotalUrlaubstageBtn');
+                    if(editUrlaubstageBtn) {
+                        const newEditBtn = editUrlaubstageBtn.cloneNode(true); // Clone to remove old listeners
+                        editUrlaubstageBtn.parentNode.replaceChild(newEditBtn, editUrlaubstageBtn);
+                        newEditBtn.addEventListener('click', () => editTotalUrlaubstage(internId, profile.total_urlaubstage_annually));
+                    }
+                     // Optionally, trigger a load for used/remaining days here if desired for the profile view itself
+                    // For now, this info is primarily shown in the monthly report context.
+
+                } else {
+                    throw new Error(result.message || "Profildaten nicht im erwarteten Format.");
+                }
+            } catch (error) {
+                console.error("Fehler beim Laden der Profildaten für Admin:", error);
+                alert("Fehler beim Laden der Profildaten: " + error.message);
+                document.getElementById('adminProfileForUser').textContent = `Details für: ${displayNameFromButton} (ID: ${internId})`;
+                ['adminProfileFirstName', 'adminProfileLastName', 'adminProfileEmail', 'adminProfileAddress', 'adminProfilePhone', 'adminProfileEducationProvider', 'adminProfileInternshipStart', 'adminProfileInternshipEnd', 'adminProfileAllgemeineNotizen', 'adminProfileTotalUrlaubstage', 'adminProfileUsedUrlaubstage', 'adminProfileRemainingUrlaubstage'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.textContent = 'Fehler beim Laden';
+                });
+            }
+
+            // Store current intern's ID and name (derived from profile if available) for absence management
+            const currentInternIdForAbsence = internId;
+            // Use the name derived from profile data for consistency
+            const currentInternNameForAbsence = (result && result.success && result.profile) ? // Added null check for result
+                                               ((result.profile.vorname && result.profile.nachname) ? `${result.profile.vorname} ${result.profile.nachname}` : (result.profile.email || `ID: ${result.profile.id}`))
+                                               : displayNameFromButton; // Fallback to button name
+
+            profileSection.dataset.currentInternId = currentInternIdForAbsence;
+            profileSection.dataset.currentInternNameToDisplay = currentInternNameForAbsence;
+
+
+            // Fetch and display absences
+            const absencesTableBody = document.getElementById('adminUserAbsencesTableBody');
+            if (absencesTableBody) {
+                absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Lade Abwesenheiten...</td></tr>';
+                try {
+                    const absencesResponse = await fetch(`/api/admin/users/${currentInternIdForAbsence}/absences`, { credentials: 'include' });
+                    if (!absencesResponse.ok) {
+                        throw new Error(`Fehler beim Laden der Abwesenheiten (Status: ${absencesResponse.status})`);
+                    }
+                    const absencesResult = await absencesResponse.json();
+                    absencesTableBody.innerHTML = ''; // Clear loading
+                    if (absencesResult.success && absencesResult.absences) {
+                        if (absencesResult.absences.length === 0) {
+                            absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Keine strukturierten Abwesenheiten erfasst.</td></tr>';
+                        } else {
+                            absencesResult.absences.forEach(absence => {
+                                const row = absencesTableBody.insertRow();
+                                row.insertCell().textContent = absence.abwesenheit_typ || 'N/A';
+                                const startDateParts = (absence.start_datum || "---").split('-');
+                                const formattedStartDate = startDateParts.length === 3 ? `${startDateParts[2]}.${startDateParts[1]}.${startDateParts[0]}` : (absence.start_datum || 'N/A');
+                                row.insertCell().textContent = formattedStartDate;
+
+                                const endDateParts = (absence.end_datum || "---").split('-');
+                                const formattedEndDate = endDateParts.length === 3 ? `${endDateParts[2]}.${endDateParts[1]}.${endDateParts[0]}` : (absence.end_datum || 'N/A');
+                                row.insertCell().textContent = formattedEndDate;
+                                row.insertCell().textContent = absence.beschreibung || '-';
+                                
+                                const aktionenCell = row.insertCell();
+                                aktionenCell.classList.add('text-nowrap');
+                                const editBtn = document.createElement('button');
+                                editBtn.classList.add('btn', 'btn-sm', 'btn-warning', 'me-1');
+                                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                                editBtn.title = "Abwesenheit bearbeiten";
+                                editBtn.onclick = () => openAdminManageAbsenceModal(currentInternIdForAbsence, currentInternNameForAbsence, absence);
+                                aktionenCell.appendChild(editBtn);
+
+                                const deleteBtn = document.createElement('button');
+                                deleteBtn.classList.add('btn', 'btn-sm', 'btn-danger');
+                                deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                                deleteBtn.title = "Abwesenheit löschen";
+                                deleteBtn.onclick = () => adminDeleteAbsence(absence.id, currentInternIdForAbsence, currentInternNameForAbsence);
+                                aktionenCell.appendChild(deleteBtn);
+                            });
+                        }
+                    } else {
+                        absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Abwesenheiten konnten nicht geladen werden.</td></tr>';
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Laden der Abwesenheiten für Admin:", error);
+                    if (absencesTableBody) absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Fehler beim Laden der Abwesenheiten.</td></tr>';
+                }
+            }
+            
+            const addAbsenceBtn = document.getElementById('adminAddAbsenceBtn');
+            if(addAbsenceBtn){
+                const newAddBtn = addAbsenceBtn.cloneNode(true); 
+                addAbsenceBtn.parentNode.replaceChild(newAddBtn, addAbsenceBtn);
+                newAddBtn.addEventListener('click', () => openAdminManageAbsenceModal(currentInternIdForAbsence, currentInternNameForAbsence));
+            }
+            
+            profileSection.style.display = 'block';
+        }
+
+        async function openAdminManageAbsenceModal(internId, internName, absenceToEdit = null) {
+            const modalEl = document.getElementById('adminManageAbsenceModal');
+            if (!modalEl) {
+                console.error("Absence management modal not found!");
+                return;
+            }
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            const form = document.getElementById('adminManageAbsenceForm');
+            form.reset(); 
+
+            document.getElementById('adminAbsenceUserId').value = internId;
+            document.getElementById('adminAbsenceForUserName').textContent = internName;
+            
+            const modalTitle = document.getElementById('adminManageAbsenceModalTitle');
+
+            if (absenceToEdit) {
+                modalTitle.textContent = `Abwesenheit bearbeiten für ${internName}`;
+                document.getElementById('adminAbsenceEditId').value = absenceToEdit.id;
+                document.getElementById('adminAbsenceStartDate').value = absenceToEdit.start_datum; 
+                document.getElementById('adminAbsenceEndDate').value = absenceToEdit.end_datum;   
+                document.getElementById('adminAbsenceType').value = absenceToEdit.abwesenheit_typ;
+                document.getElementById('adminAbsenceDescription').value = absenceToEdit.beschreibung || '';
+            } else {
+                modalTitle.textContent = `Neue Abwesenheit für ${internName} erstellen`;
+                document.getElementById('adminAbsenceEditId').value = ''; 
+            }
+            modal.show();
+        }
+
+        async function adminSaveAbsence() {
+            const absenceId = document.getElementById('adminAbsenceEditId').value;
+            const userId = document.getElementById('adminAbsenceUserId').value;
+            const profileSection = document.getElementById('adminInternProfileDetailsSection');
+            const internNameToRefresh = profileSection.dataset.currentInternNameToDisplay;
+
+
+            const absenceData = {
+                start_datum: document.getElementById('adminAbsenceStartDate').value,
+                end_datum: document.getElementById('adminAbsenceEndDate').value,
+                abwesenheit_typ: document.getElementById('adminAbsenceType').value,
+                beschreibung: document.getElementById('adminAbsenceDescription').value.trim()
+            };
+
+            if (!absenceData.start_datum || !absenceData.end_datum || !absenceData.abwesenheit_typ) {
+                alert("Startdatum, Enddatum und Abwesenheitstyp sind erforderlich.");
+                return;
+            }
+            if (new Date(absenceData.end_datum) < new Date(absenceData.start_datum)) {
+                alert("Das Enddatum darf nicht vor dem Startdatum liegen.");
+                return;
+            }
+
+            const url = absenceId ? `/api/admin/absences/${absenceId}` : `/api/admin/users/${userId}/absences`;
+            const method = absenceId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(absenceData)
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(result.message || `Abwesenheit erfolgreich ${absenceId ? 'aktualisiert' : 'erstellt'}.`);
+                    const modalEl = document.getElementById('adminManageAbsenceModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    
+                    if(userId && internNameToRefresh) {
+                        zeigeAdminInternProfil(userId, internNameToRefresh); 
+                    } else {
+                        console.warn("Konnte internId oder Name für Profil-Refresh nicht finden nach Abwesenheit speichern. Lade Hauptliste neu.");
+                        ladePraktikanten(); 
+                    }
+                } else {
+                    throw new Error(result.message || `Fehler beim ${absenceId ? 'Aktualisieren' : 'Erstellen'} der Abwesenheit.`);
+                }
+            } catch (error) {
+                console.error(`Fehler beim Speichern der Abwesenheit:`, error);
+                alert("Fehler: " + error.message);
+            }
+        }
+
+        async function adminDeleteAbsence(absenceId, internIdToRefresh, internNameToRefresh) {
+            if (!confirm("Möchten Sie diese Abwesenheit wirklich löschen?")) return;
+
+            try {
+                const response = await fetch(`/api/admin/absences/${absenceId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(result.message || "Abwesenheit erfolgreich gelöscht.");
+                     if(internIdToRefresh && internNameToRefresh) {
+                        zeigeAdminInternProfil(internIdToRefresh, internNameToRefresh);
+                    } else {
+                         console.warn("Konnte internId oder Name für Profil-Refresh nicht finden nach Abwesenheit löschen. Lade Hauptliste neu.");
+                         ladePraktikanten(); 
+                    }
+                } else {
+                    throw new Error(result.message || "Fehler beim Löschen der Abwesenheit.");
+                }
+            } catch (error) {
+                console.error("Fehler beim Löschen der Abwesenheit:", error);
+                alert("Fehler: " + error.message);
+            }
+        }
+
+
+        async function editTotalUrlaubstage(internId, currentTotal) {
+            const newValue = prompt(`Jährliche Urlaubstage für Praktikant ID ${internId} ändern.\nAktueller Wert: ${currentTotal === null || currentTotal === undefined ? 'N/A' : currentTotal}\nNeuer Wert:`, currentTotal !== null && currentTotal !== undefined ? currentTotal : '');
+
+            if (newValue === null) { // User cancelled
+                return;
+            }
+
+            const parsedValue = parseInt(newValue, 10);
+            if (isNaN(parsedValue) || parsedValue < 0) {
+                alert("Ungültige Eingabe. Bitte eine nicht-negative Zahl eingeben.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/praktikanten/${internId}/urlaubstage`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', },
+                    credentials: 'include',
+                    body: JSON.stringify({ total_urlaubstage_annually: parsedValue })
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    alert(result.message || "Urlaubstage erfolgreich aktualisiert.");
+                    document.getElementById('adminProfileTotalUrlaubstage').textContent = parsedValue;
+                    // Refresh the main intern list to show updated value there too
+                    ladePraktikanten();
+                } else {
+                    throw new Error(result.message || "Fehler beim Aktualisieren der Urlaubstage.");
+                }
+            } catch (error) {
+                console.error("Fehler beim Aktualisieren der Urlaubstage:", error);
+                alert("Fehler: " + error.message);
+            }
+        }
+
+        // --- Admin Berichte Management ---
+        async function ladePraktikantenFilter(dropdownId, defaultOptionText = "Alle Aktiven"){
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) { console.error(`Praktikanten Filter Dropdown mit ID '${dropdownId}' nicht gefunden.`); return; }
+            try {
+                const response = await fetch("/api/praktikanten", { method: "GET", headers: {"Content-Type": "application/json"}, credentials: "include" });
+                if (!response.ok){ 
+                    if (response.status === 401 || response.status === 403) { alert("Sitzung abgelaufen."); window.location.href = '/login.html'; return; }
+                    throw new Error("Filter-Ladefehler (Status: " + response.status + ")");      
+                }
+                const praktikanten = await response.json();
+                
+                dropdown.innerHTML = `<option value="">${defaultOptionText}</option>`; 
+                
+                praktikanten.filter(p => p.status === 'aktiv' && p.rolle === 'Praktikant').forEach(p => {
+                    const option = document.createElement("option");
+                    option.value = p.id;
+                    // API for /api/praktikanten now returns vorname, nachname, email
+                    option.textContent = (p.vorname && p.nachname) ? `${p.vorname} ${p.nachname}` : (p.email || `ID: ${p.id}`);
+                    dropdown.appendChild(option);
+                });
+            }
+            catch (error){ console.error(`Fehler ladePraktikantenFilter für ${dropdownId}:`, error); }
+        }
+
+        function decimalHoursToHHMM(decimalHours) {
+            if (isNaN(parseFloat(decimalHours)) || decimalHours === null) return 'N/A';
+            const numDecimalHours = parseFloat(decimalHours);
+            const hours = Math.floor(numDecimalHours);
+            const minutes = Math.round((numDecimalHours - hours) * 60);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        async function ladeBerichteAdmin() {
+            const praktikantenFilterElement = document.getElementById("praktikantenFilterBerichte");
+            const monatAuswahlElement = document.getElementById("monatAuswahlBerichte");
+            const tabelle = document.getElementById('berichteTabelle');
+
+            if (!praktikantenFilterElement || !monatAuswahlElement || !tabelle) {
+                console.error("Filter- oder Tabellenelemente für Berichte nicht gefunden.");
+                if(tabelle) tabelle.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Fehler: UI-Elemente nicht initialisiert.</td></tr>';
+                return;
+            }
+
+            const praktikantIdToFilter = praktikantenFilterElement.value;
+            const monatToFilter = monatAuswahlElement.value; // Format YYYY-MM
+
+            tabelle.innerHTML = '<tr><td colspan="7" class="text-center">Lade Berichte...</td></tr>';
+            let berichteToDisplay = [];
+
+            try {
+                if (monatToFilter) { // A specific month is selected
+                    if (praktikantIdToFilter) {
+                        // Specific intern AND specific month
+                        const response = await fetch(`/api/admin/berichte/${praktikantIdToFilter}/monat/${monatToFilter}`, { credentials: "include" });
+                        if (!response.ok) {
+                            const errData = await response.json().catch(() => ({}));
+                            throw new Error(errData.message || `Fehler beim Laden der Monatsberichte für Praktikant ${praktikantIdToFilter} (Status: ${response.status})`);
+                        }
+                        const data = await response.json();
+                        // Expect 'reportEntries' from the backend
+                        if (data.success && data.reportEntries) {
+                            const praktikantOption = praktikantenFilterElement.options[praktikantenFilterElement.selectedIndex];
+                            const praktikantDisplayName = praktikantOption ? praktikantOption.text : `${data.vorname || ''} ${data.nachname || ''}`.trim();
+                            
+                            data.reportEntries.forEach(entry => {
+                                berichteToDisplay.push({
+                                    id: entry.id, // This will be prefixed e.g., "arbeit-123" or "abwesenheit-..."
+                                    datum: entry.datum,
+                                    startzeit: entry.startzeit,
+                                    endzeit: entry.endzeit,
+                                    dauer: entry.dauer,
+                                    bericht: entry.beschreibung, // Use 'beschreibung'
+                                    benutzerId: parseInt(praktikantIdToFilter),
+                                    vorname: data.vorname, // From main data object
+                                    nachname: data.nachname, // From main data object
+                                    type: entry.type, // 'Arbeit', 'Urlaub', 'Krankheit'
+                                    segments: entry.segments // Add segments data
+                                });
+                            });
+                        } else {
+                             console.warn(`Keine Einträge gefunden für Praktikant ${praktikantIdToFilter} im Monat ${monatToFilter} oder Fehler: ${data.message}`);
+                        }
+                    } else {
+                        // Specific month, but ALL active interns
+                        const praktikantenResponse = await fetch("/api/praktikanten", { credentials: "include" });
+                        if (!praktikantenResponse.ok) {
+                             const errData = await praktikantenResponse.json().catch(() => ({}));
+                            throw new Error(errData.message || `Fehler beim Laden der Praktikantenliste (Status: ${praktikantenResponse.status})`);
+                        }
+                        const allePraktikanten = await praktikantenResponse.json();
+                        const aktivePraktikanten = allePraktikanten.filter(p => p.status === 'aktiv' && p.rolle === 'Praktikant');
+
+                        for (const praktikant of aktivePraktikanten) {
+                            try {
+                                const response = await fetch(`/api/admin/berichte/${praktikant.id}/monat/${monatToFilter}`, { credentials: "include" });
+                                if (!response.ok) {
+                                    console.warn(`Konnte Berichte für ${praktikant.vorname} ${praktikant.nachname} (ID: ${praktikant.id}) für Monat ${monatToFilter} nicht laden: Status ${response.status}`);
+                                    continue;
+                                }
+                                const data = await response.json();
+                                // Expect 'reportEntries' from the backend
+                                if (data.success && data.reportEntries) {
+                                    data.reportEntries.forEach(entry => {
+                                        berichteToDisplay.push({
+                                            id: entry.id,
+                                            datum: entry.datum,
+                                            startzeit: entry.startzeit,
+                                            endzeit: entry.endzeit,
+                                            dauer: entry.dauer,
+                                            bericht: entry.beschreibung,
+                                            benutzerId: praktikant.id,
+                                            vorname: praktikant.vorname,
+                                            nachname: praktikant.nachname,
+                                            type: entry.type,
+                                            segments: entry.segments // Add segments data
+                                        });
+                                    });
+                                }
+                            } catch (loopError) {
+                                console.warn(`Fehler beim Laden der Berichte für Praktikant ${praktikant.id} im Monat ${monatToFilter}:`, loopError);
+                            }
+                        }
+                        // Sort combined results by date (desc) then by intern name
+                        berichteToDisplay.sort((a, b) => {
+                            const dateAStr = a.datum.split('.').reverse().join('-') + 'T' + (a.startzeit || (a.type === 'Arbeit' ? '00:00' : '00:00')); // Default time for sorting if null
+                            const dateBStr = b.datum.split('.').reverse().join('-') + 'T' + (b.startzeit || (b.type === 'Arbeit' ? '00:00' : '00:00'));
+                            const dateA = new Date(dateAStr);
+                            const dateB = new Date(dateBStr);
+                            
+                            if (dateB.getTime() !== dateA.getTime()) return dateB.getTime() - dateA.getTime(); // Sort descending by date
+                            
+                            const nameA = `${a.vorname || ''} ${a.nachname || ''}`.toLowerCase();
+                            const nameB = `${b.vorname || ''} ${b.nachname || ''}`.toLowerCase();
+                            return nameA.localeCompare(nameB); // Then ascending by name
+                        });
+                    }
+                } else { // No specific month selected
+                    let fetchUrl = '/api/admin/berichte'; // Default: all recent reports (limited by backend)
+                    if (praktikantIdToFilter) {
+                        fetchUrl = `/api/admin/berichte/${praktikantIdToFilter}`; // All reports for a specific intern
+                    }
+                    
+                    const response = await fetch(fetchUrl, { credentials: "include" });
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.message || `Fehler beim Laden der Berichte von ${fetchUrl} (Status: ${response.status})`);
+                    }
+                    const rawBerichte = await response.json();
+
+                    if (Array.isArray(rawBerichte)) {
+                         if (praktikantIdToFilter) {
+                            berichteToDisplay = rawBerichte.map(b => ({...b})); // Data is already for the specific intern
+                         } else { // Data is from /api/admin/berichte (all interns, needs filtering for active)
+                            const praktikantenResponse = await fetch("/api/praktikanten", { credentials: "include" });
+                            if (!praktikantenResponse.ok) {
+                                const errData = await praktikantenResponse.json().catch(() => ({}));
+                                throw new Error(errData.message || `Fehler beim Laden der Praktikantenliste für Filterung (Status: ${praktikantenResponse.status})`);
+                            }
+                            const allePraktikanten = await praktikantenResponse.json();
+                            const aktivePraktikantenIds = allePraktikanten
+                                .filter(p => p.status === 'aktiv' && p.rolle === 'Praktikant')
+                                .map(p => parseInt(p.id));
+                            // Add vorname/nachname to reports from /api/admin/berichte if not already there (it should be)
+                            berichteToDisplay = rawBerichte.filter(b => aktivePraktikantenIds.includes(b.benutzerId))
+                                .map(b => {
+                                    const internInfo = allePraktikanten.find(p => p.id === b.benutzerId);
+                                    return {
+                                        ...b,
+                                        vorname: b.vorname || (internInfo ? internInfo.vorname : ''),
+                                        nachname: b.nachname || (internInfo ? internInfo.nachname : '')
+                                    };
+                                });
+                         }
+                    } else {
+                        console.error("Unerwartetes Format von Berichtsdaten:", rawBerichte);
+                        berichteToDisplay = [];
+                    }
+                }
+                
+                
+                zeigeBerichteAdmin(berichteToDisplay);
+
+            } catch (error) {
+                console.error('Fehler in ladeBerichteAdmin:', error);
+                tabelle.innerHTML = `<tr><td colspan="7" class="text-center text-danger">Fehler beim Laden der Berichte: ${error.message}</td></tr>`;
+            }
+        }
+        // Admin Berichte Sorting Functionality
+        let adminCurrentSort = { column: 'datum', direction: 'desc' };
+        let adminReportEntriesData = [];
+
+        // Enhanced zeigeBerichteAdmin function with sorting and expansion support
+        function zeigeBerichteAdmin(reportEntries) {
+            adminReportEntriesData = reportEntries;
+            
+            // Load sort state from localStorage
+            const savedSort = localStorage.getItem('adminBerichteSortState');
+            if (savedSort) {
+                adminCurrentSort = JSON.parse(savedSort);
+            }
+            
+            // Sort the data
+            const sortedEntries = sortAdminBerichteData(reportEntries, adminCurrentSort.column, adminCurrentSort.direction);
+            
+            // Update sort indicators
+            updateAdminSortIndicators();
+            
+            // Render the table
+            renderAdminBerichteTable(sortedEntries);
+        }
+
+        function renderAdminBerichteTable(reportEntries) {
+            const tabelle = document.getElementById('berichteTabelle');
+            if(!tabelle) { console.error("Berichte Tabelle nicht gefunden"); return; }
+            tabelle.innerHTML = '';
+            if (!reportEntries || reportEntries.length === 0) {
+                tabelle.innerHTML = '<tr><td colspan="8" class="text-center">Keine Einträge für aktuelle Auswahl gefunden.</td></tr>';
+                return;
+            }
+            
+            reportEntries.forEach(entry => {
+                const kurzBeschreibung = entry.bericht && entry.bericht.length > 50 ? entry.bericht.substring(0, 50) + '...' : entry.bericht || '';
+                const zeile = document.createElement('tr');
+                zeile.classList.add('berichte-row');
+                
+                if (entry.type !== 'Arbeit') {
+                    zeile.classList.add('table-light', 'text-muted');
+                } else if (entry.isAutoCutoff) {
+                    zeile.classList.add('auto-cutoff-entry');
+                }
+                
+                const escapedBeschreibung = (entry.bericht || '').replace(/'/g, "\\'");
+                const praktikantDisplayName = (entry.vorname && entry.nachname) ? `${entry.vorname} ${entry.nachname}` : (`ID: ${entry.benutzerId}`);
+                const escapedPraktikantDisplayName = praktikantDisplayName.replace(/'/g, "\\'");
+
+                // Date cell
+                const datumCell = zeile.insertCell();
+                datumCell.textContent = entry.datum || 'N/A';
+                
+                // Praktikant cell
+                const praktikantCell = zeile.insertCell();
+                praktikantCell.innerHTML = `
+                    ${entry.isAutoCutoff ? '<i class="bi bi-clock-history auto-cutoff-icon" title="Automatisch beendet um 23:59"></i>' : ''}
+                    ${praktikantDisplayName}
+                    ${entry.isAutoCutoff ? '<span class="auto-cutoff-badge ms-2">Auto-Ende</span>' : ''}
+                `;
+                
+                // Start time cell
+                const startzeitCell = zeile.insertCell();
+                startzeitCell.textContent = entry.type === 'Arbeit' ? (entry.startzeit || 'N/A') : entry.type;
+                
+                // End time cell
+                const endzeitCell = zeile.insertCell();
+                endzeitCell.textContent = entry.type === 'Arbeit' ? (entry.endzeit || 'N/A') : '-';
+                // Detect autocut entries: 23:59 end time + autocut message in bericht
+                const isAutoCut = entry.endzeit === '23:59' && (
+                    entry.bericht?.includes('Timer wurde automatisch um 23:59') ||
+                    entry.bericht?.includes('Auto cut-off Notification') ||
+                    entry.bericht?.includes('automatisch um 23:59 beendet')
+                );
+                
+                // Highlight autocut end times in red
+                if (isAutoCut) {
+                    endzeitCell.style.color = '#dc3545'; // Bootstrap danger red
+                    endzeitCell.style.fontWeight = '600';  // Slightly bold for emphasis
+                }
+                
+                // Duration cell
+                const dauerCell = zeile.insertCell();
+                dauerCell.textContent = entry.type === 'Arbeit' ? (entry.dauer.includes(':') ? entry.dauer : decimalHoursToHHMM(entry.dauer)) : (entry.dauer || 'N/A');
+                // Highlight autocut durations in red (use same detection logic)
+                if (isAutoCut) {
+                    dauerCell.style.color = '#dc3545'; // Bootstrap danger red
+                    dauerCell.style.fontWeight = '600';  // Slightly bold for emphasis
+                }
+                
+                // Activity report cell (just text now, expand button moved to actions)
+                const berichtCell = zeile.insertCell();
+                berichtCell.innerHTML = `${kurzBeschreibung}${entry.isAutoCutoff ? '<br><small class="text-muted"><i class="bi bi-info-circle"></i> Timer wurde automatisch um 23:59 beendet</small>' : ''}`;
+                
+                // Actions cell with expand button on left and action buttons on right
+                const actionsCell = zeile.insertCell();
+                actionsCell.style.textAlign = 'right';
+                actionsCell.style.whiteSpace = 'nowrap';
+                
+                const actionsContainer = document.createElement('div');
+                actionsContainer.className = 'd-flex justify-content-end align-items-center gap-2';
+                
+                // Add expand button first (on the left side of actions) if there are segments
+                if (entry.type === 'Arbeit' && entry.segments && entry.segments.length > 1) {
+                    const expandBtn = document.createElement('button');
+                    expandBtn.className = 'btn btn-sm btn-outline-secondary expand-btn';
+                    expandBtn.innerHTML = '🔽';
+                    expandBtn.title = `${entry.segments.length} Arbeitssegmente anzeigen`;
+                    expandBtn.style.minWidth = '32px';
+                    expandBtn.setAttribute('data-entry-id', entry.id || Math.random().toString(36));
+                    expandBtn.addEventListener('click', () => toggleAdminSegments(expandBtn, entry));
+                    actionsContainer.appendChild(expandBtn);
+                }
+                
+                // Add action buttons
+                const buttonGroup = document.createElement('div');
+                buttonGroup.className = 'btn-group btn-group-sm';
+                buttonGroup.setAttribute('role', 'group');
+                buttonGroup.innerHTML = `
+                    ${entry.type === 'Arbeit' ? `
+                    <button class="btn btn-info js-admin-bericht-details-button" data-displayname="${escapedPraktikantDisplayName}" data-datum="${entry.datum || ''}" data-zeit="${(entry.startzeit || '') + ' - ' + (entry.endzeit || '')}" data-bericht="${escapedBeschreibung}">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-warning js-admin-bericht-edit-button" data-id="${entry.id.replace('arbeit-', '')}" data-bericht="${escapedBeschreibung}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger js-admin-bericht-delete-button" data-id="${entry.id.replace('arbeit-', '')}" data-displayname="${escapedPraktikantDisplayName}" data-datum="${entry.datum || ''}">
+                        <i class="bi bi-trash"></i>
+                    </button>` :
+                    `<button class="btn btn-warning js-admin-absence-edit-button" data-id="${entry.id.replace('abwesenheit-', '')}" data-type="${entry.type}" data-datum="${entry.datum || ''}" data-bericht="${escapedBeschreibung}" data-benutzerId="${entry.benutzerId}" data-displayname="${escapedPraktikantDisplayName}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-danger js-admin-absence-delete-button" data-id="${entry.id.replace('abwesenheit-', '')}" data-type="${entry.type}" data-datum="${entry.datum || ''}" data-displayname="${escapedPraktikantDisplayName}">
+                        <i class="bi bi-trash"></i>
+                    </button>`}
+                `;
+                
+                actionsContainer.appendChild(buttonGroup);
+                actionsCell.appendChild(actionsContainer);
+                
+                tabelle.appendChild(zeile);
+            });
+            attachAdminBerichteButtonListeners();
+        }
+
+        function toggleAdminSegments(button, entry) {
+            const row = button.closest('tr');
+            const entryId = button.getAttribute('data-entry-id');
+            const existingSegmentRows = document.querySelectorAll(`[data-admin-parent-id="${entryId}"]`);
+            
+            if (existingSegmentRows.length > 0) {
+                // Collapse: remove segment rows
+                existingSegmentRows.forEach(segRow => segRow.remove());
+                button.innerHTML = '🔽'; // Down arrow for expand
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-outline-primary');
+            } else {
+                // Expand: add segment rows
+                entry.segments.forEach((segment, index) => {
+                    const segmentRow = document.createElement('tr');
+                    segmentRow.className = 'segment-row';
+                    segmentRow.setAttribute('data-admin-parent-id', entryId);
+                    segmentRow.style.backgroundColor = '#f8f9fa';
+                    segmentRow.style.fontSize = '0.9em';
+                    
+                    // Date cell with indent
+                    const emptyDateCell = segmentRow.insertCell();
+                    emptyDateCell.innerHTML = `<span style="margin-left: 20px;">└─ Segment ${index + 1}</span>`;
+                    
+                    // Empty praktikant cell
+                    const emptyPraktikantCell = segmentRow.insertCell();
+                    emptyPraktikantCell.innerHTML = '-';
+                    
+                    // Segment start time
+                    const segStartCell = segmentRow.insertCell();
+                    segStartCell.textContent = segment.start;
+                    
+                    // Segment end time  
+                    const segEndCell = segmentRow.insertCell();
+                    segEndCell.textContent = segment.end;
+                    
+                    // Segment duration
+                    const segDurationCell = segmentRow.insertCell();
+                    segDurationCell.textContent = segment.dauer || '00:00';
+                    
+                    // Segment report (no expand button for segments)
+                    const segReportCell = segmentRow.insertCell();
+                    segReportCell.textContent = segment.bericht || 'Kein Bericht';
+                    segReportCell.style.fontStyle = 'italic';
+                    
+                    // Segment actions cell with edit and delete buttons
+                    const segmentActionsCell = segmentRow.insertCell();
+                    segmentActionsCell.style.textAlign = 'right';
+                    segmentActionsCell.style.whiteSpace = 'nowrap';
+                    
+                    // Create action buttons for this segment
+                    const segmentActionContainer = document.createElement('div');
+                    segmentActionContainer.className = 'd-flex justify-content-end align-items-center gap-1';
+                    
+                    // Edit segment button (same style as main buttons)
+                    const editSegmentBtn = document.createElement('button');
+                    editSegmentBtn.className = 'btn btn-sm btn-warning';
+                    editSegmentBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                    editSegmentBtn.title = 'Segment bearbeiten';
+                    editSegmentBtn.addEventListener('click', () => editAdminSegment(index, entry.id, segment, entry));
+                    segmentActionContainer.appendChild(editSegmentBtn);
+                    
+                    // Delete segment button (same style as main buttons)
+                    const deleteSegmentBtn = document.createElement('button');
+                    deleteSegmentBtn.className = 'btn btn-sm btn-danger';
+                    deleteSegmentBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    deleteSegmentBtn.title = 'Segment löschen';
+                    deleteSegmentBtn.addEventListener('click', () => deleteAdminSegment(index, entry.id, segment, entry));
+                    segmentActionContainer.appendChild(deleteSegmentBtn);
+                    
+                    segmentActionsCell.appendChild(segmentActionContainer);
+                    
+                    // Insert after the parent row
+                    row.insertAdjacentElement('afterend', segmentRow);
+                });
+                
+                button.innerHTML = '🔼'; // Up arrow for collapse
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-primary');
+            }
+        }
+
+        function sortAdminBerichteData(data, column, direction) {
+            const sortedData = [...data].sort((a, b) => {
+                let valueA, valueB;
+                
+                switch(column) {
+                    case 'datum':
+                        valueA = parseGermanDate(a.datum || '01.01.1900');
+                        valueB = parseGermanDate(b.datum || '01.01.1900');
+                        break;
+                    case 'praktikant':
+                        const nameA = (a.vorname && a.nachname) ? `${a.vorname} ${a.nachname}` : `ID: ${a.benutzerId}`;
+                        const nameB = (b.vorname && b.nachname) ? `${b.vorname} ${b.nachname}` : `ID: ${b.benutzerId}`;
+                        valueA = nameA.toLowerCase();
+                        valueB = nameB.toLowerCase();
+                        break;
+                    case 'startzeit':
+                        valueA = parseTime(a.startzeit || '00:00');
+                        valueB = parseTime(b.startzeit || '00:00');
+                        break;
+                    case 'endzeit':
+                        valueA = parseTime(a.endzeit || '00:00');
+                        valueB = parseTime(b.endzeit || '00:00');
+                        break;
+                    case 'dauer':
+                        valueA = parseDuration(a.dauer || '0');
+                        valueB = parseDuration(b.dauer || '0');
+                        break;
+                    case 'bericht':
+                        valueA = (a.bericht || '').toLowerCase();
+                        valueB = (b.bericht || '').toLowerCase();
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                let comparison = 0;
+                if (valueA > valueB) comparison = 1;
+                else if (valueA < valueB) comparison = -1;
+                
+                return direction === 'asc' ? comparison : -comparison;
+            });
+            
+            return sortedData;
+        }
+
+        function updateAdminSortIndicators() {
+            // Reset all indicators in admin berichte table
+            document.querySelectorAll('#berichteBereich .sort-indicator').forEach(indicator => {
+                indicator.textContent = '⇅'; // Up-down arrow
+                indicator.style.color = '#6c757d';
+            });
+            
+            // Update active indicator
+            const activeHeader = document.querySelector(`#berichteBereich [data-sort="${adminCurrentSort.column}"] .sort-indicator`);
+            if (activeHeader) {
+                activeHeader.textContent = adminCurrentSort.direction === 'asc' ? '▲' : '▼';
+                activeHeader.style.color = '#0d6efd';
+            }
+        }
+
+        // Helper functions for parsing (Admin Dashboard)
+        function parseGermanDate(dateStr) {
+            const [day, month, year] = dateStr.split('.');
+            return new Date(year, month - 1, day);
+        }
+        
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':');
+            return parseInt(hours || 0) * 60 + parseInt(minutes || 0);
+        }
+        
+        function parseDuration(durationStr) {
+            // Handle different duration formats
+            if (durationStr.includes('Std.')) {
+                durationStr = durationStr.replace(' Std.', '');
+            }
+            const [hours, minutes] = durationStr.split(':');
+            return parseInt(hours || 0) * 60 + parseInt(minutes || 0);
+        }
+
+        async function fetchBerichtDetails(berichtId) {
+            try {
+                const response = await fetch(`/api/admin/berichte/details/${berichtId}`, { credentials: 'include' });
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({ message: "Unbekannter Fehler beim Laden des Berichts" }));
+                    throw new Error(errData.message || `Fehler beim Laden des Berichts ${berichtId}`);
+                }
+                const result = await response.json();
+                if (result.success && result.data) {
+                    return result.data; // Should contain id, bericht, startzeit, endzeit, dauer, etc.
+                } else {
+                    throw new Error(result.message || "Berichtsdaten nicht im erwarteten Format.");
+                }
+            } catch (error) {
+                console.error("Fehler beim Laden der Berichtsdetails:", error);
+                alert("Fehler beim Laden der Berichtsdetails: " + error.message);
+                return null;
+            }
+        }
+
+        function attachAdminBerichteButtonListeners() {
+            document.querySelectorAll('.js-admin-bericht-details-button, .js-admin-bericht-edit-button, .js-admin-bericht-delete-button, .js-admin-absence-edit-button, .js-admin-absence-delete-button').forEach(b => {
+                const clone = b.cloneNode(true);
+                if(b.parentNode) b.parentNode.replaceChild(clone, b);
+            });
+            document.querySelectorAll('.js-admin-bericht-details-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.getElementById("modalPraktikantNameBericht").textContent = this.dataset.displayname.replace(/\\'/g, "'");
+                    document.getElementById("modalDatumBericht").textContent = this.dataset.datum;
+                    document.getElementById("modalZeitBericht").textContent = this.dataset.zeit;
+                    // Convert line breaks to HTML for proper display
+                    const berichtText = this.dataset.bericht.replace(/\\'/g, "'");
+                    document.getElementById("modalBerichtText").innerHTML = berichtText.replace(/\n/g, '<br>');
+                    new bootstrap.Modal(document.getElementById("berichtModal")).show();
+                });
+            });
+            document.querySelectorAll('.js-admin-bericht-edit-button').forEach(button => {
+                button.addEventListener('click', async function() { // Make the listener async
+                    const berichtId = this.dataset.id;
+                    console.log('Attempting to fetch report details for ID:', berichtId); // Added logging
+                    const berichtDetails = await fetchBerichtDetails(berichtId); // Fetch details
+
+                   if (berichtDetails) {
+                       document.getElementById("adminEditBerichtId").value = berichtDetails.id;
+                       document.getElementById("adminEditBerichtTextarea").value = berichtDetails.bericht || '';
+                       document.getElementById("adminEditStartzeit").value = berichtDetails.startzeit || ''; // Populate start time
+                       document.getElementById("adminEditEndzeit").value = berichtDetails.endzeit || '';     // Populate end time
+                       document.getElementById("adminEditDauer").value = berichtDetails.dauer || '';         // Populate duration (read-only)
+
+                       new bootstrap.Modal(document.getElementById("berichtBearbeitenModal")).show();
+                   }
+               });
+           });
+            document.querySelectorAll('.js-admin-bericht-delete-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    adminDeleteBericht(this.dataset.id, this.dataset.displayname, this.dataset.datum);
+                });
+            });
+            
+            // Event listeners for absence buttons
+            document.querySelectorAll('.js-admin-absence-edit-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const absenceId = this.dataset.id;
+                    const absenceType = this.dataset.type;
+                    const datum = this.dataset.datum;
+                    const bericht = this.dataset.bericht;
+                    const benutzerId = this.dataset.benutzerId;
+                    const displayName = this.dataset.displayname;
+                    adminEditAbsenceFromBerichte(absenceId, absenceType, datum, bericht, benutzerId, displayName);
+                });
+            });
+            
+            document.querySelectorAll('.js-admin-absence-delete-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const absenceId = this.dataset.id;
+                    const absenceType = this.dataset.type;
+                    const datum = this.dataset.datum;
+                    const displayName = this.dataset.displayname;
+                    adminDeleteAbsenceFromBerichte(absenceId, absenceType, datum, displayName);
+                });
+            });
+        }
+
+        // Segment Management Functions
+        async function editAdminSegment(segmentIndex, parentEntryId, segment, parentEntry) {
+            // Use the segment's individual ID for editing
+            if (!segment.id) {
+                alert('Segment-ID nicht verfügbar. Bearbeitung nicht möglich.');
+                return;
+            }
+            
+            // Populate the edit modal with segment data
+            document.getElementById("adminEditBerichtId").value = segment.id;
+            document.getElementById("adminEditBerichtTextarea").value = segment.bericht || '';
+            document.getElementById("adminEditStartzeit").value = segment.start || '';
+            document.getElementById("adminEditEndzeit").value = segment.end || '';
+            
+            // Calculate and display duration
+            if (segment.start && segment.end) {
+                const startTime = segment.start.split(':');
+                const endTime = segment.end.split(':');
+                const startMinutes = parseInt(startTime[0]) * 60 + parseInt(startTime[1]);
+                const endMinutes = parseInt(endTime[0]) * 60 + parseInt(endTime[1]);
+                const durationMinutes = endMinutes - startMinutes;
+                if (durationMinutes > 0) {
+                    const hours = Math.floor(durationMinutes / 60);
+                    const minutes = durationMinutes % 60;
+                    document.getElementById("adminEditDauer").value = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            // Show the modal
+            new bootstrap.Modal(document.getElementById("berichtBearbeitenModal")).show();
+        }
+        
+        async function deleteAdminSegment(segmentIndex, parentEntryId, segment, parentEntry) {
+            const confirmMessage = `Möchten Sie Segment ${segmentIndex + 1} vom ${parentEntry.datum} wirklich löschen?\n\nSegment-Details:\nZeit: ${segment.start} - ${segment.end}\nBericht: ${segment.bericht || 'Kein Bericht'}\n\nDiese Aktion kann nicht rückgängig gemacht werden.`;
+            
+            if (confirm(confirmMessage)) {
+                if (!segment.id) {
+                    alert('Segment-ID nicht verfügbar. Löschung nicht möglich.');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/admin/berichte/${segment.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        alert('Segment erfolgreich gelöscht.');
+                        // Refresh the reports to show updated data
+                        ladeBerichteAdmin();
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        alert(`Fehler beim Löschen des Segments: ${errorData.message || 'Unbekannter Fehler'}`);
+                    }
+                } catch (error) {
+                    console.error('Error deleting segment:', error);
+                    alert('Netzwerkfehler beim Löschen des Segments.');
+                }
+            }
+        }
+
+        async function adminDeleteBericht(berichtId, praktikantName, berichtDatum) {
+            const confirmMessage = `Möchten Sie den Bericht von "${praktikantName.replace(/\\'/g, "'")}" vom ${berichtDatum} wirklich löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.`;
+            if (confirm(confirmMessage)) {
+                try {
+                    const response = await fetch(`/api/admin/berichte/${berichtId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }, // Still send this, as backend expects it for other reqs
+                        credentials: 'include'
+                    });
+
+                    let resultMessage;
+                    let success = false;
+
+                    if (response.ok) {
+                        const contentType = response.headers.get("content-type");
+                        if (contentType && contentType.indexOf("application/json") !== -1) {
+                            const result = await response.json();
+                            resultMessage = result.message || "Bericht erfolgreich gelöscht.";
+                            success = result.success;
+                        } else {
+                            // If not JSON, but status is OK, assume success but no specific message from backend
+                            resultMessage = "Bericht erfolgreich gelöscht (Serverantwort nicht im JSON-Format).";
+                            success = true;
+                        }
+                    } else {
+                        // Handle HTTP error statuses (4xx, 5xx)
+                        try {
+                            const errorResult = await response.json(); // Try to parse error as JSON
+                            resultMessage = errorResult.message || `Fehler ${response.status}: ${response.statusText}`;
+                        } catch (e) { // If error response is not JSON
+                            resultMessage = `Fehler ${response.status}: ${response.statusText}. Serverantwort nicht im JSON-Format.`;
+                        }
+                    }
+
+                    if (success) {
+                        alert(resultMessage);
+                        ladeBerichteAdmin(); // Reload the reports table
+                    } else {
+                        throw new Error(resultMessage || "Unbekannter Fehler beim Löschen des Berichts.");
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Löschen des Berichts (Admin):", error);
+                    alert("Fehler: " + error.message);
+                }
+            }
+        }
+
+        async function adminSaveEditedBericht() {
+            const berichtId = document.getElementById("adminEditBerichtId").value;
+            const newBerichtText = document.getElementById("adminEditBerichtTextarea").value.trim();
+            const newStartzeit = document.getElementById("adminEditStartzeit").value; // Get value from time input
+            const newEndzeit = document.getElementById("adminEditEndzeit").value;   // Get value from time input
+
+            if (!newBerichtText || !newStartzeit || !newEndzeit) { // Add validation for time fields
+                 alert("Berichtstext, Startzeit und Endzeit dürfen nicht leer sein.");
+                 return;
+            }
+            // Optional: Add basic frontend time format validation if needed
+
+            try {
+                const response = await fetch(`/api/admin/berichte/${berichtId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        bericht: newBerichtText,
+                        startzeit: newStartzeit, // Include startzeit
+                        endzeit: newEndzeit      // Include endzeit
+                        // Do NOT include 'dauer' here, it's calculated on backend
+                    })
+                });
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({message: "Unbekannter Fehler"}));
+                    throw new Error(errData.message || `Fehler beim Speichern des Berichts (Admin)`);
+                }
+                alert("Bericht erfolgreich aktualisiert (Admin).");
+                bootstrap.Modal.getInstance(document.getElementById("berichtBearbeitenModal")).hide();
+                ladeBerichteAdmin();
+            } catch (error) {
+                console.error("Fehler Admin Bericht speichern:", error);
+                alert("Fehler: " + error.message);
+            }
+        }
+
+        // --- Absence Management Functions ---
+        async function adminEditAbsenceFromBerichte(absenceId, absenceType, datum, bericht, benutzerId, displayName) {
+            // Reuse the existing absence management modal
+            const modalEl = document.getElementById('adminManageAbsenceModal');
+            if (!modalEl) {
+                console.error("Absence management modal not found!");
+                return;
+            }
+            
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            const form = document.getElementById('adminManageAbsenceForm');
+            form.reset();
+            
+            // Set modal title for editing
+            document.getElementById('adminManageAbsenceModalTitle').textContent = `Abwesenheit bearbeiten für ${displayName.replace(/\\'/g, "'")}`;
+            document.getElementById('adminAbsenceForUserName').textContent = displayName.replace(/\\'/g, "'");
+            
+            // Populate form with existing data
+            document.getElementById('adminAbsenceEditId').value = absenceId;
+            document.getElementById('adminAbsenceUserId').value = benutzerId;
+            document.getElementById('adminAbsenceType').value = absenceType;
+            document.getElementById('adminAbsenceDescription').value = bericht.replace(/\\'/g, "'") || '';
+            
+            // Parse the date from DD.MM.YYYY format to YYYY-MM-DD format for input fields
+            const dateParts = datum.split('.');
+            if (dateParts.length === 3) {
+                const isoDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                document.getElementById('adminAbsenceStartDate').value = isoDate;
+                document.getElementById('adminAbsenceEndDate').value = isoDate;
+            }
+            
+            modal.show();
+        }
+        
+        async function adminDeleteAbsenceFromBerichte(absenceId, absenceType, datum, displayName) {
+            const confirmMessage = `Möchten Sie den ${absenceType}-Eintrag von "${displayName.replace(/\\'/g, "'")}" vom ${datum} wirklich löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.`;
+            
+            if (confirm(confirmMessage)) {
+                try {
+                    const response = await fetch(`/api/admin/absences/${absenceId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert(result.message || "Abwesenheit erfolgreich gelöscht.");
+                        ladeBerichteAdmin(); // Reload the reports table
+                    } else {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.message || `Fehler ${response.status}: ${response.statusText}`);
+                    }
+                } catch (error) {
+                    console.error("Fehler beim Löschen der Abwesenheit:", error);
+                    alert("Fehler beim Löschen: " + error.message);
+                }
+            }
+        }
+
+        // --- Utility Functions ---
+        function validateSelectedMonth(monat) {
+            if (!monat) return false;
+            const heute = new Date();
+            const [jahr, monatNr] = monat.split("-");
+            if (!jahr || !monatNr || isNaN(parseInt(jahr)) || isNaN(parseInt(monatNr))) {
+                console.warn("Ungültiges Monatsformat für Validierung:", monat);
+                return false;
+            }
+            const selectedDate = new Date(Date.UTC(parseInt(jahr), parseInt(monatNr) - 1, 1));
+            const minDate = new Date(Date.UTC(heute.getUTCFullYear() - 5, heute.getUTCMonth(), 1));
+            const maxDateBoundary = new Date(Date.UTC(heute.getUTCFullYear() + 1, heute.getUTCMonth() + 1, 1)); 
+        
+            if (selectedDate < minDate || selectedDate >= maxDateBoundary) { 
+                alert("Bitte wählen Sie ein Datum zwischen " +
+                      minDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }) +
+                      " und " +
+                      new Date(Date.UTC(heute.getUTCFullYear() + 1, heute.getUTCMonth(), 1)).toLocaleDateString('de-DE', { month: 'long', year: 'numeric', timeZone: 'UTC' }));
+                return false;
+            }
+            return true;
+        }
+        function formatMonthName(dateString) {
+            if (!dateString || !/^\d{4}-\d{2}$/.test(dateString)) return "Ungültiger Monat";
+            const months = {"01":"Januar","02":"Februar","03":"März","04":"April","05":"Mai","06":"Juni","07":"Juli","08":"August","09":"September","10":"Oktober","11":"November","12":"Dezember"};
+            const [year, month] = dateString.split("-");
+            return `${months[month] || ''} ${year || ''}`;
+        }
+        
+        // Helper function to get ISO week number
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+
+async function druckeBerichte() {
+    const praktikantIdAuswahl = document.getElementById("praktikantenFilterBerichte");
+    const monatAuswahl = document.getElementById("monatAuswahlBerichte");
+
+    if (!praktikantIdAuswahl || !praktikantIdAuswahl.value) {
+        alert("Bitte wählen Sie einen Praktikanten aus.");
+        return;
+    }
+    if (!monatAuswahl || !monatAuswahl.value) {
+        alert("Bitte wählen Sie einen Monat aus.");
+        return;
+    }
+
+    const selectedPraktikantId = praktikantIdAuswahl.value;
+    const selectedMonth = monatAuswahl.value; // Format YYYY-MM
+
+    console.log(`Admin Druck angefordert für Praktikant ID: ${selectedPraktikantId}, Monat: ${selectedMonth}`);
+
+    try {
+        const response = await fetch(`/api/admin/berichte/${selectedPraktikantId}/monat/${selectedMonth}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include"
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: "Unbekannter Fehler beim Laden der Berichtsdaten" }));
+            throw new Error(errorData.message || `Fehler beim Laden der Berichte für Praktikant ${selectedPraktikantId}, Monat ${selectedMonth}`);
+        }
+
+        const data = await response.json();
+        console.log("Debug: Full data object from API:", data); // Roo Debug Log 1
+        // Expect new structure from backend: reportEntries, monthlyAbsenceCounts, etc.
+        const {
+            reportEntries,
+            vorname,
+            nachname,
+            bildungstraeger,
+            praktikumszeit_1_von_bis,
+            praktikumszeit_2_von_bis,
+            monthlyAbsenceCounts, // Contains Urlaub and Krankheit day counts for the month
+            internDetails // Contains total_urlaubstage_annually, usedUrlaubstageThisYear, remainingUrlaubstage
+        } = data;
+        
+        console.log("Debug: monthlyAbsenceCounts:", monthlyAbsenceCounts); // Roo Debug Log 2
+
+        const displayPraktikantName = (vorname && nachname) ? `${vorname} ${nachname}` : (data.benutzername || `ID: ${selectedPraktikantId}`);
+
+        if (!reportEntries || reportEntries.length === 0) {
+            alert(`Keine Einträge für ${displayPraktikantName} im Monat ${formatMonthName(selectedMonth)} gefunden.`);
+            return;
+        }
+
+        // reportEntries is already sorted and contains all necessary daily items.
+        // No need for client-side combinedEntries logic.
+
+        const alterDruckBereich = document.getElementById("druckBereichAdmin");
+        if (alterDruckBereich) alterDruckBereich.remove();
+
+        const druckBereich = document.createElement("div");
+        druckBereich.id = "druckBereichAdmin";
+        druckBereich.classList.add("print-section");
+
+        const praktikantFullName = `${escapeHTML(vorname || '')} ${escapeHTML(nachname || '')}`.trim();
+        const monthYearFormatted = escapeHTML(formatMonthName(selectedMonth));
+        const currentDate = new Date().toLocaleDateString('de-DE');
+
+        // Use total worked hours for the month directly from the API response
+        const totalWorkedHoursForTheMonth = typeof data.calculatedTotalMonthlyHours === 'number' ? data.calculatedTotalMonthlyHours : 0;
+        console.log("Debug: totalWorkedHoursForTheMonth from API (data.calculatedTotalMonthlyHours):", totalWorkedHoursForTheMonth); // Roo Debug Log NEW 1 (updated)
+        
+        // Determine if Fehlzeiten occurred based on sick days OR insufficient hours
+        const actualFehlzeitenTage = monthlyAbsenceCounts?.Krankheit || 0;
+        const hasRecordedSickDays = actualFehlzeitenTage > 0;
+        // Ensure MONTHLY_TARGET_HOURS is defined; it's a global const (line 447)
+        const hasInsufficientHours = totalWorkedHoursForTheMonth < MONTHLY_TARGET_HOURS;
+        
+        const hasActualFehlzeiten = hasRecordedSickDays || hasInsufficientHours;
+
+        console.log("Debug: actualFehlzeitenTage (Krankheit):", actualFehlzeitenTage);
+        console.log("Debug: hasRecordedSickDays:", hasRecordedSickDays);
+        console.log("Debug: MONTHLY_TARGET_HOURS:", MONTHLY_TARGET_HOURS);
+        console.log("Debug: hasInsufficientHours (API worked < target):", hasInsufficientHours);
+        console.log("Debug: final hasActualFehlzeiten (sick OR insufficient):", hasActualFehlzeiten);
+        
+        const totalUrlaubstageAnnually = internDetails?.total_urlaubstage_annually !== undefined && internDetails?.total_urlaubstage_annually !== null ? internDetails.total_urlaubstage_annually : 'N/A';
+        const usedUrlaubstageForPrint = internDetails?.usedUrlaubstageUpToMonatEnd !== undefined && internDetails?.usedUrlaubstageUpToMonatEnd !== null ? internDetails.usedUrlaubstageUpToMonatEnd : 'N/A';
+        const remainingUrlaubstageForPrint = internDetails?.remainingUrlaubstageAsOfMonatEnd !== undefined && internDetails?.remainingUrlaubstageAsOfMonatEnd !== null ? internDetails.remainingUrlaubstageAsOfMonatEnd : 'N/A';
+
+
+        let reportContentHTML = `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h4>Vorlage zur monatlichen Anwesenheitserfassung<br>in der betrieblichen Praxisphase</h4>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p><strong>Praktikant:</strong> ${praktikantFullName}</p>
+                <p><strong>Bildungsträger:</strong> ${escapeHTML(bildungstraeger || 'N/A')}</p>
+                <p><strong>Praktikumszeitraum 1:</strong> ${escapeHTML(praktikumszeit_1_von_bis || 'N/A')}</p>
+                <p><strong>Praktikumszeitraum 2:</strong> ${escapeHTML(praktikumszeit_2_von_bis || 'N/A')}</p>
+                <p><strong>Monat/Jahr des Berichts:</strong> ${monthYearFormatted}</p>
+                <p><strong>Urlaubsanspruch:</strong> ${totalUrlaubstageAnnually} Tage</p>
+                <p><strong>Genutzte Urlaubstage (bis Ende ${monthYearFormatted}):</strong> ${usedUrlaubstageForPrint} Tage</p>
+                <p><strong>Verbleibende Urlaubstage (Stand Ende ${monthYearFormatted}):</strong> ${remainingUrlaubstageForPrint} Tage</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p>[${hasActualFehlzeiten ? ' ' : 'X'}] Es sind keine monatlichen Fehlzeiten entstanden:</p>
+                <p style="margin-left: 20px;">Hiermit wird bestätigt, dass <strong>${praktikantFullName}</strong> ihrer / seiner Anwesenheitspflicht im Monat <strong>${monthYearFormatted}</strong> vollumfänglich nachgekommen ist.</p>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <p>[${hasActualFehlzeiten ? 'X' : ' '}] Es sind monatliche Fehlzeiten entstanden:</p>
+                <p style="margin-left: 20px;">Hiermit wird bestätigt, dass <strong>${praktikantFullName}</strong> ihrer / seiner Anwesenheitspflicht im Monat <strong>${monthYearFormatted}</strong> nicht vollumfänglich nachgekommen ist.</p>
+
+                ${(hasActualFehlzeiten) ? `
+                    <p style="margin-top: 10px;">Es sind folgende Fehlzeiten entstanden:</p>
+                    ${(() => {
+                        const krankheitEntries = reportEntries.filter(entry => entry.type === 'Krankheit')
+                            .sort((a, b) => new Date(a.datum.split('.').reverse().join('-')) - new Date(b.datum.split('.').reverse().join('-'))); // Sort by date DD.MM.YYYY
+                        
+                        if (krankheitEntries.length === 0) return '';
+
+                        let groupedHtml = '';
+                        let i = 0;
+                        while (i < krankheitEntries.length) {
+                            let currentGroup = krankheitEntries[i];
+                            let groupStartDate = currentGroup.datum;
+                            let groupEndDate = currentGroup.datum;
+                            let groupDescription = currentGroup.beschreibung || '';
+                            let j = i + 1;
+
+                            // Check for consecutive days with the same description
+                            while (j < krankheitEntries.length) {
+                                const nextDay = new Date(krankheitEntries[j].datum.split('.').reverse().join('-'));
+                                const expectedNextDay = new Date(groupEndDate.split('.').reverse().join('-'));
+                                expectedNextDay.setDate(expectedNextDay.getDate() + 1);
+                                
+                                // Check if it's the next calendar day AND description matches
+                                if (nextDay.getTime() === expectedNextDay.getTime() && (krankheitEntries[j].beschreibung || '') === groupDescription) {
+                                    groupEndDate = krankheitEntries[j].datum;
+                                    j++;
+                                } else {
+                                    break;
+                                }
+                            }
+
+                            const formattedStartDate = escapeHTML(groupStartDate);
+                            const formattedEndDate = escapeHTML(groupEndDate);
+                            const description = escapeHTML(groupDescription);
+
+                            let absenceDetail = `<p style="margin-left: 20px;">`;
+                            if (formattedStartDate === formattedEndDate) {
+                                absenceDetail += `am <strong>${formattedStartDate}</strong>`;
+                            } else {
+                                absenceDetail += `von <strong>${formattedStartDate}</strong> bis <strong>${formattedEndDate}</strong>`;
+                            }
+                            absenceDetail += ` krankheitsbedingt gefehlt`;
+                            absenceDetail += '<br>(AU liegt vor und wird/wurde dem Bildungsträger zugesandt)';
+                            absenceDetail += '</p>';
+                            if (description) {
+                                absenceDetail += `<p style="margin-left: 20px;">Beschreibung: ${description}</p>`;
+                            }
+                            groupedHtml += absenceDetail;
+                            i = j; // Move to the next entry after the group
+                        }
+                        return groupedHtml;
+                    })()}
+                ` : ''}
+            </div>
+
+            <div style="margin-top: 20px;">
+                <p>Weitere Anmerkungen oder sonstige Fehltage:</p>
+                <p>____________________________________________________________________________________________________</p>
+                <p>____________________________________________________________________________________________________</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
+                <div>
+                    <p style="margin-bottom: 0;">Datum: <strong>${currentDate}</strong></p>
+                </div>
+                <div style="text-align: center;">
+                    <img src="images/admin-signature-placeholder.svg" alt="Admin Signature and Stamp" style="max-width: 180px; height: auto; display: block; margin-bottom: 5px;"><br>
+                    <span style="display: inline-block; border-top: 1px solid #000; padding-top: 2px; min-width: 200px;">Unterschrift, Stempel des Betriebs</span>
+                </div>
+            </div>
+        `;
+
+        druckBereich.innerHTML = reportContentHTML;
+
+        document.body.appendChild(druckBereich);
+
+        // Set document title for better default filename in print dialog
+        const internNameSanitized = praktikantFullName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, ''); // Basic sanitization
+        const monthYearFormattedSanitized = monthYearFormatted.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, ''); // Basic sanitization
+        const originalTitle = document.title;
+        document.title = `${internNameSanitized}_Bericht_${monthYearFormattedSanitized}`;
+
+
+        setTimeout(() => {
+            window.print();
+            // Restore original document title
+            document.title = originalTitle;
+            // Optional: druckBereich.remove(); // Remove after printing
+        }, 250);
+
+    } catch (error) {
+        console.error("Fehler beim Drucken der Admin-Monatsberichte:", error);
+        alert("Druckfehler (Admin): " + error.message);
+    }
+}
+
+        // --- Date Navigation & Chart Functions ---
+        function generateMonthButtons(containerId, targetMonthInputId) {
+            const container = document.getElementById(containerId);
+            if (!container) { console.warn("Month button container not found:", containerId); return; }
+            container.innerHTML = ''; 
+            const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+            months.forEach((monthName, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn', 'btn-outline-primary', 'm-1');
+                button.textContent = monthName;
+                button.dataset.month = (index + 1).toString().padStart(2, '0');
+                container.appendChild(button);
+            });
+        }
+
+        function updateYearMonthDisplay(monatAuswahlId, yearDisplayId, prevBtnId, nextBtnId, monthContainerId) {
+            const monatAuswahl = document.getElementById(monatAuswahlId);
+            const currentYearDisplay = document.getElementById(yearDisplayId);
+            const prevYearBtn = document.getElementById(prevBtnId);
+            const nextYearBtn = document.getElementById(nextBtnId);
+
+            if (!monatAuswahl || !currentYearDisplay || !prevYearBtn || !nextYearBtn) { console.warn("Missing elements for year/month display for", monatAuswahlId); return; }
+            
+            if (!monatAuswahl.value) { 
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                monatAuswahl.value = formatMV(heute);
+            }
+
+            const [currentYearStr, currentMonthVal] = monatAuswahl.value.split('-');
+            const currentYear = parseInt(currentYearStr);
+            currentYearDisplay.textContent = currentYearStr;
+
+            const minYear = monatAuswahl.min ? parseInt(monatAuswahl.min.split('-')[0]) : null;
+            const maxYear = monatAuswahl.max ? parseInt(monatAuswahl.max.split('-')[0]) : null;
+
+            prevYearBtn.disabled = (minYear && currentYear <= minYear);
+            nextYearBtn.disabled = (maxYear && currentYear >= maxYear);
+            
+            const monthButtons = document.querySelectorAll(`#${monthContainerId} .btn`);
+            if (monthButtons.length > 0) {
+                monthButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.month === currentMonthVal) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        function changeYear(offset, monatAuswahlId, yearDisplayId, prevBtnId, nextBtnId, monthContainerId) {
+            const monatAuswahl = document.getElementById(monatAuswahlId);
+            const [yearStr, month] = monatAuswahl.value.split('-');
+            let newYear = parseInt(yearStr) + offset;
+
+            const minYear = monatAuswahl.min ? parseInt(monatAuswahl.min.split('-')[0]) : null;
+            const maxYear = monatAuswahl.max ? parseInt(monatAuswahl.max.split('-')[0]) : null;
+
+            if (minYear && newYear < minYear) newYear = minYear;
+            if (maxYear && newYear > maxYear) newYear = maxYear;
+            
+            monatAuswahl.value = `${newYear}-${month}`;
+            monatAuswahl.dispatchEvent(new Event('change'));
+        }
+
+        async function ladeUndZeigeStundenChart() {
+            const monatAuswahlChartEl = document.getElementById('monatAuswahlChart');
+            const praktikantenFilterChartEl = document.getElementById('praktikantenFilterChart');
+            
+            if (!monatAuswahlChartEl || !praktikantenFilterChartEl) {
+                console.error("Chart filter elements not found.");
+                return;
+            }
+
+            const monthString = monatAuswahlChartEl.value;
+            const praktikantId = praktikantenFilterChartEl.value;
+
+            if (!monthString) {
+                console.warn("Kein Monat für Chart ausgewählt.");
+                if (hoursBarChart) { hoursBarChart.destroy(); hoursBarChart = null; }
+                const chartInfo = document.getElementById('chartHoursThresholdInfo');
+                if(chartInfo) chartInfo.textContent = 'Bitte Monat auswählen.';
+                return;
+            }
+            try {
+                let apiUrl = `/api/admin/dashboard/hours-summary?month=${monthString}`;
+                if (praktikantId) {
+                    apiUrl += `&praktikantId=${praktikantId}`;
+                }
+                const response = await fetch(apiUrl, {
+                    method: 'GET', headers: { 'Content-Type': 'application/json' }, credentials: 'include'
+                });
+                if (!response.ok) {
+                    const errText = await response.text(); 
+                    throw new Error(`Fehler beim Laden der Chart-Daten (Status: ${response.status}): ${errText}`);
+                }
+                const result = await response.json();
+                if (result.success && result.data) {
+                    const chartData = result.data; // Expects array of { id, vorname, nachname, totalHours }
+                    const labels = chartData.map(d => (d.vorname && d.nachname) ? `${d.vorname} ${d.nachname}` : `ID: ${d.id}`);
+                    const hours = chartData.map(d => parseFloat(d.totalHours)); // This is now only work hours
+                    
+                    const STUNDEN_THRESHOLD = 160;
+                    // Bar colors based on whether the work hours meet the threshold
+                    const backgroundColors = hours.map(h => h < STUNDEN_THRESHOLD ? 'rgba(255, 99, 132, 0.6)' : 'rgba(75, 192, 192, 0.6)');
+                    const borderColors = hours.map(h => h < STUNDEN_THRESHOLD ? 'rgba(255, 99, 132, 1)' : 'rgba(75, 192, 192, 1)');
+                    
+                    const ctx = document.getElementById('hoursChart').getContext('2d');
+                    if (hoursBarChart) {
+                        hoursBarChart.destroy();
+                    }
+                    hoursBarChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Gearbeitete Stunden', // Label changed to reflect only work hours
+                                data: hours,
+                                backgroundColor: backgroundColors,
+                                borderColor: borderColors,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Stunden' }
+                                }
+                            },
+                            plugins: {
+                                legend: { display: labels.length > 1 }, // Keep legend if multiple interns, or single dataset label
+                                title: { display: true, text: `Gearbeitete Stunden für ${formatMonthName(monthString)}` }, // Title updated
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += decimalHoursToHHMM(context.parsed.y);
+                                            }
+                                            return label;
+                                        }
+                                        // Footer for grand total removed as we only have one dataset now
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    const thresholdInfo = document.getElementById('chartHoursThresholdInfo');
+                    if (thresholdInfo) {
+                         const underPerformingDisplayNames = chartData
+                            .filter(d => parseFloat(d.totalHours) < STUNDEN_THRESHOLD) // Check against work hours
+                            .map(d => (d.vorname && d.nachname) ? `${d.vorname} ${d.nachname}` : `ID: ${d.id}`);
+
+                         if (chartData.length === 0) {
+                            thresholdInfo.textContent = 'Keine Arbeitsstunden für diesen Zeitraum und Filter erfasst.';
+                         } else if(underPerformingDisplayNames.length > 0) {
+                            thresholdInfo.textContent = `Hinweis: ${underPerformingDisplayNames.join(', ')} ${underPerformingDisplayNames.length === 1 ? 'hat' : 'haben'} weniger als ${STUNDEN_THRESHOLD} Arbeitsstunden im ausgewählten Monat geleistet.`;
+                         } else {
+                            thresholdInfo.textContent = `Alle angezeigten Praktikanten haben ${STUNDEN_THRESHOLD} oder mehr Arbeitsstunden im ausgewählten Monat geleistet.`;
+                         }
+                    }
+                } else {
+                    console.error("Fehlerhafte Daten für Chart:", result.message);
+                    const chartInfo = document.getElementById('chartHoursThresholdInfo');
+                    if(chartInfo) chartInfo.textContent = 'Chart-Daten konnten nicht geladen werden oder sind leer.';
+                     if (hoursBarChart) { hoursBarChart.destroy(); hoursBarChart = null; } 
+                }
+            } catch (error) {
+                console.error("Fehler beim Laden/Anzeigen des Stunden-Charts:", error);
+                const chartInfo = document.getElementById('chartHoursThresholdInfo');
+                if(chartInfo) chartInfo.textContent = 'Fehler beim Laden der Chart-Daten.';
+                if (hoursBarChart) { hoursBarChart.destroy(); hoursBarChart = null; } 
+            }
+        }
+
+        // Add click handlers for sortable headers (Admin Berichte) - Enhanced version
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for elements to be rendered, then attach admin berichte sorting handlers
+            setTimeout(() => {
+                document.querySelectorAll('#berichteBereich .sortable-header').forEach(header => {
+                    header.addEventListener('click', function() {
+                        const column = this.getAttribute('data-sort');
+                        
+                        console.log('Admin sorting by column:', column, 'Current sort:', adminCurrentSort);
+                        
+                        // Toggle direction if same column, otherwise start with descending
+                        if (adminCurrentSort.column === column) {
+                            adminCurrentSort.direction = adminCurrentSort.direction === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            adminCurrentSort.column = column;
+                            adminCurrentSort.direction = 'desc';
+                        }
+                        
+                        // Save sort state
+                        localStorage.setItem('adminBerichteSortState', JSON.stringify(adminCurrentSort));
+                        
+                        // Re-render with new sort
+                        if (adminReportEntriesData.length > 0) {
+                            zeigeBerichteAdmin(adminReportEntriesData);
+                        }
+                    });
+                });
+            }, 500);
+        });
+
+        // --- DOMContentLoaded ---
+        document.addEventListener("DOMContentLoaded", () => {
+            const adminAddBerichtModalEl = document.getElementById('adminAddBerichtModal');
+            const adminAddBerichtFormEl = document.getElementById('adminAddBerichtForm');
+            const adminAddBerichtPraktikantEl = document.getElementById('adminAddBerichtPraktikant');
+            const adminAddBerichtTypEl = document.getElementById('adminAddBerichtTyp'); // New Type selector
+            const adminAddBerichtDatumEl = document.getElementById('adminAddBerichtDatum');
+            const adminAddBerichtStartzeitEl = document.getElementById('adminAddBerichtStartzeit');
+            const adminAddBerichtEndzeitEl = document.getElementById('adminAddBerichtEndzeit');
+            const adminAddBerichtDauerEl = document.getElementById('adminAddBerichtDauer');
+            const adminAddBerichtArbeitDetailsEl = document.getElementById('adminAddBerichtArbeitDetails'); // Container for work details
+            const adminAddBerichtTextareaLabelEl = document.getElementById('adminAddBerichtTextareaLabel');
+            const adminAddBerichtTextareaEl = document.getElementById('adminAddBerichtTextarea');
+
+            function toggleAdminAddBerichtFields() {
+                const selectedType = adminAddBerichtTypEl.value;
+                if (selectedType === 'Arbeit') {
+                    adminAddBerichtArbeitDetailsEl.style.display = 'block';
+                    adminAddBerichtStartzeitEl.required = true;
+                    adminAddBerichtEndzeitEl.required = true;
+                    adminAddBerichtTextareaLabelEl.textContent = 'Berichtstext';
+                    adminAddBerichtTextareaEl.required = true;
+                    adminAddBerichtTextareaEl.rows = 5;
+                } else { // Krankheit or Urlaub
+                    adminAddBerichtArbeitDetailsEl.style.display = 'none';
+                    adminAddBerichtStartzeitEl.required = false;
+                    adminAddBerichtEndzeitEl.required = false;
+                    adminAddBerichtStartzeitEl.value = ''; // Clear time fields
+                    adminAddBerichtEndzeitEl.value = '';
+                    adminAddBerichtDauerEl.value = '';
+                    adminAddBerichtTextareaLabelEl.textContent = 'Beschreibung (optional)';
+                    adminAddBerichtTextareaEl.required = false;
+                    adminAddBerichtTextareaEl.rows = 3;
+                }
+            }
+
+            if (adminAddBerichtTypEl) {
+                adminAddBerichtTypEl.addEventListener('change', toggleAdminAddBerichtFields);
+            }
+
+
+            function calculateAndDisplayDuration(startEl, endEl, dauerEl) {
+                const startTime = startEl.value;
+                const endTime = endEl.value;
+                if (startTime && endTime) {
+                    const start = new Date(`1970-01-01T${startTime}:00`);
+                    const end = new Date(`1970-01-01T${endTime}:00`);
+                    let diffMillis = end - start;
+                    // A simple assumption for overnight work: if end time is "earlier" than start time on the same date, add 24h.
+                    // This doesn't handle work periods longer than 24h or complex multi-day entries.
+                    if (diffMillis < 0) {
+                        // Check if it's a genuine overnight case or just a small negative diff due to seconds/ms not considered.
+                        // For simplicity, if end time is on the "same day" but earlier, treat as overnight.
+                        // A more robust solution would involve date parts if the work could span multiple midnights.
+                        const startDateForCompare = new Date(start.toDateString()); // Date part only
+                        const endDateForCompare = new Date(end.toDateString()); // Date part only
+                        if (startDateForCompare.getTime() === endDateForCompare.getTime() && end.getTime() < start.getTime()){
+                             diffMillis += 24 * 60 * 60 * 1000; // Add 24 hours
+                        } else if (end.getTime() < start.getTime()){
+                            // If dates are different and end is still earlier, it's likely an input error or complex scenario not handled.
+                            // For now, we might show 00:00 or an error, or let backend validate.
+                            // Sticking to a simple positive duration calculation for now.
+                            // If diffMillis is still negative, it indicates an issue.
+                        }
+                    }
+                    
+                    if (diffMillis < 0) { // If still negative, likely an input error
+                        dauerEl.value = "Error"; // Or "00:00" or handle as invalid
+                        return;
+                    }
+
+                    const diffHoursTotal = diffMillis / (1000 * 60 * 60);
+                    const hours = Math.floor(diffHoursTotal);
+                    const minutes = Math.round((diffHoursTotal - hours) * 60);
+                    dauerEl.value = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                } else {
+                    dauerEl.value = '';
+                }
+            }
+
+            if (adminAddBerichtStartzeitEl && adminAddBerichtEndzeitEl && adminAddBerichtDauerEl) {
+                adminAddBerichtStartzeitEl.addEventListener('input', () => calculateAndDisplayDuration(adminAddBerichtStartzeitEl, adminAddBerichtEndzeitEl, adminAddBerichtDauerEl));
+                adminAddBerichtEndzeitEl.addEventListener('input', () => calculateAndDisplayDuration(adminAddBerichtStartzeitEl, adminAddBerichtEndzeitEl, adminAddBerichtDauerEl));
+            }
+
+            const adminAddNewBerichtBtnEl = document.getElementById("adminAddNewBerichtBtn");
+            if (adminAddNewBerichtBtnEl) {
+                adminAddNewBerichtBtnEl.addEventListener("click", () => {
+                    if (adminAddBerichtFormEl) adminAddBerichtFormEl.reset();
+                    if (adminAddBerichtTypEl) adminAddBerichtTypEl.value = 'Arbeit'; // Reset type to Arbeit
+                    toggleAdminAddBerichtFields(); // Apply initial field visibility based on default type
+
+                    if (adminAddBerichtDatumEl) { // Set current date as default
+                        const today = new Date();
+                        const year = today.getFullYear();
+                        const month = String(today.getMonth() + 1).padStart(2, '0');
+                        const day = String(today.getDate()).padStart(2, '0');
+                        adminAddBerichtDatumEl.value = `${year}-${month}-${day}`;
+                    }
+                    if (adminAddBerichtPraktikantEl) {
+                        // Ensure the placeholder is selected
+                        adminAddBerichtPraktikantEl.innerHTML = '<option value="" disabled selected>Praktikant auswählen...</option>';
+                        ladePraktikantenFilter("adminAddBerichtPraktikant", "Praktikant auswählen...");
+                    }
+                    if (adminAddBerichtDauerEl) adminAddBerichtDauerEl.value = '';
+                    
+                    if (adminAddBerichtModalEl) new bootstrap.Modal(adminAddBerichtModalEl).show();
+                });
+            }
+
+            const adminSaveNewBerichtButtonEl = document.getElementById("adminSaveNewBerichtButton");
+            if (adminSaveNewBerichtButtonEl) {
+                adminSaveNewBerichtButtonEl.addEventListener("click", async () => {
+                    const selectedType = adminAddBerichtTypEl.value;
+                    let dataToSend = {
+                        benutzerId: adminAddBerichtPraktikantEl.value,
+                        datum: adminAddBerichtDatumEl.value,
+                        typ: selectedType
+                    };
+                    const beschreibungText = adminAddBerichtTextareaEl.value.trim();
+
+                    // Validation
+                    if (!dataToSend.benutzerId) { alert("Bitte einen Praktikanten auswählen."); return; }
+                    if (!dataToSend.datum) { alert("Bitte ein Datum auswählen."); return; }
+
+                    if (selectedType === 'Arbeit') {
+                        if (!adminAddBerichtStartzeitEl.value) { alert("Bitte eine Startzeit angeben."); return; }
+                        if (!adminAddBerichtEndzeitEl.value) { alert("Bitte eine Endzeit angeben."); return; }
+                        if (adminAddBerichtDauerEl.value === "Error" || adminAddBerichtDauerEl.value === "" || adminAddBerichtDauerEl.value === "00:00") {
+                            alert("Ungültige oder keine Dauer berechnet. Bitte Start- und Endzeit überprüfen.");
+                            return;
+                        }
+                        if (!beschreibungText) { alert("Bitte einen Berichtstext eingeben."); return; }
+                        dataToSend.startzeit = adminAddBerichtStartzeitEl.value;
+                        dataToSend.endzeit = adminAddBerichtEndzeitEl.value;
+                        dataToSend.bericht = beschreibungText; // Use 'bericht' for work type
+                    } else { // Krankheit or Urlaub
+                        // For Krankheit/Urlaub, 'bericht' (beschreibung) is optional
+                        if (beschreibungText) {
+                           dataToSend.beschreibung = beschreibungText; // Use 'beschreibung' for absence types
+                        }
+                    }
+                    
+                    console.log("Data to send for new entry:", dataToSend); // For debugging
+
+                    try {
+                        const response = await fetch('/api/admin/berichte', { // Target POST endpoint
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify(dataToSend)
+                        });
+                        const result = await response.json();
+                        if (response.ok && result.success) {
+                            alert(result.message || "Neuer Berichtseintrag erfolgreich gespeichert.");
+                            const modalInstance = bootstrap.Modal.getInstance(adminAddBerichtModalEl);
+                            if(modalInstance) modalInstance.hide();
+                            ladeBerichteAdmin();
+                        } else {
+                            throw new Error(result.message || "Fehler beim Speichern des neuen Berichtseintrags.");
+                        }
+                    } catch (error) {
+                        console.error("Fehler beim Speichern des neuen Berichts (Admin):", error);
+                        alert("Fehler: " + error.message);
+                    }
+                });
+            }
+
+            showSection('dashboardBereich');
+            setActiveSidebarLink("dashboardLink");
+            ladeDashboardDaten(); 
+            
+            // Initialize Berichte Tab Filters
+            generateMonthButtons('monthButtonContainerBerichte', 'monatAuswahlBerichte');
+            const monatAuswahlBerichteEl = document.getElementById("monatAuswahlBerichte");
+            if (monatAuswahlBerichteEl) {
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                monatAuswahlBerichteEl.min = formatMV(new Date(heute.getFullYear() - 5, heute.getMonth()));
+                monatAuswahlBerichteEl.max = formatMV(new Date(heute.getFullYear() + 1, heute.getMonth()));
+                if(!monatAuswahlBerichteEl.value) monatAuswahlBerichteEl.value = formatMV(heute);
+                updateYearMonthDisplay('monatAuswahlBerichte', 'currentYearDisplayBerichte', 'prevYearBtnBerichte', 'nextYearBtnBerichte', 'monthButtonContainerBerichte');
+            }
+
+            // Initialize Chart Filters
+            ladePraktikantenFilter("praktikantenFilterChart", "Alle Aktiven");
+            generateMonthButtons('monthButtonContainerChart', 'monatAuswahlChart'); 
+            const monatAuswahlChartEl = document.getElementById("monatAuswahlChart");
+            if (monatAuswahlChartEl) {
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                monatAuswahlChartEl.min = formatMV(new Date(heute.getFullYear() - 5, heute.getMonth()));
+                monatAuswahlChartEl.max = formatMV(new Date(heute.getFullYear() + 1, heute.getMonth()));
+                if(!monatAuswahlChartEl.value) monatAuswahlChartEl.value = formatMV(heute);
+                updateYearMonthDisplay('monatAuswahlChart', 'currentYearDisplayChart', 'prevYearBtnChart', 'nextYearBtnChart', 'monthButtonContainerChart'); 
+                ladeUndZeigeStundenChart(); 
+            }
+
+            // Initialize Missing Hours Filters
+            generateMonthButtons('monthButtonContainerMissingHours', 'missingHoursMonthSelect');
+            const missingHoursMonthSelectEl = document.getElementById("missingHoursMonthSelect");
+            if (missingHoursMonthSelectEl) {
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                missingHoursMonthSelectEl.min = formatMV(new Date(heute.getFullYear() - 5, heute.getMonth()));
+                missingHoursMonthSelectEl.max = formatMV(new Date(heute.getFullYear() + 1, heute.getMonth()));
+                if(!missingHoursMonthSelectEl.value) missingHoursMonthSelectEl.value = formatMV(heute);
+                updateYearMonthDisplay('missingHoursMonthSelect', 'currentYearDisplayMissingHours', 'prevYearBtnMissingHours', 'nextYearBtnMissingHours', 'monthButtonContainerMissingHours');
+                ladeUndZeigeFehlendeStunden(missingHoursMonthSelectEl.value); // Initial load
+            }
+
+            // Event Listeners for Tab Navigation
+            document.getElementById("dashboardLink").addEventListener("click", (e) => {
+                e.preventDefault();
+                showSection('dashboardBereich');
+                setActiveSidebarLink("dashboardLink");
+                ladeDashboardDaten(); 
+                ladeUndZeigeStundenChart(); 
+                if(missingHoursMonthSelectEl) ladeUndZeigeFehlendeStunden(missingHoursMonthSelectEl.value); // Reload missing hours for current selection
+            });
+            document.getElementById("uebersichtLink").addEventListener("click", (e) => { e.preventDefault(); showSection('praktikantenBereich'); setActiveSidebarLink("uebersichtLink"); ladePraktikanten(); });
+            document.getElementById("berichteLink").addEventListener("click", (e) => {
+                e.preventDefault();
+                showSection('berichteBereich');
+                setActiveSidebarLink("berichteLink");
+                ladePraktikantenFilter("praktikantenFilterBerichte", "Alle Praktikanten (Aktive)");
+                ladeBerichteAdmin();
+                updateYearMonthDisplay('monatAuswahlBerichte', 'currentYearDisplayBerichte', 'prevYearBtnBerichte', 'nextYearBtnBerichte', 'monthButtonContainerBerichte');
+            });
+            document.getElementById("logoutButton").addEventListener("click", (e) => { e.preventDefault(); logout(); });
+            
+            // Modal Save Buttons
+            const savePraktikantButton = document.getElementById("savePraktikantEditButton");
+            if(savePraktikantButton) savePraktikantButton.addEventListener("click", savePraktikantEdit);
+            const adminSaveBerichtButton = document.getElementById("adminSaveEditedBerichtButton");
+            if(adminSaveBerichtButton) adminSaveBerichtButton.addEventListener("click", adminSaveEditedBericht);
+
+            const closeAdminProfileButton = document.getElementById('closeAdminInternProfileDetailsButton');
+            if (closeAdminProfileButton) {
+                closeAdminProfileButton.addEventListener('click', () => {
+                    const profileSection = document.getElementById('adminInternProfileDetailsSection');
+                    if (profileSection) {
+                        profileSection.style.display = 'none';
+                    }
+                });
+            }
+
+            // Berichte Tab Filter Listeners
+            const praktikantenFilterBerichteEl = document.getElementById("praktikantenFilterBerichte");
+            if (praktikantenFilterBerichteEl) praktikantenFilterBerichteEl.addEventListener("change", ladeBerichteAdmin);
+            
+            if (monatAuswahlBerichteEl) {
+                monatAuswahlBerichteEl.addEventListener("change", () => {
+                    updateYearMonthDisplay('monatAuswahlBerichte', 'currentYearDisplayBerichte', 'prevYearBtnBerichte', 'nextYearBtnBerichte', 'monthButtonContainerBerichte');
+                    ladeBerichteAdmin();
+                });
+            }
+            const prevYearBtnBerichteEl = document.getElementById('prevYearBtnBerichte');
+            if(prevYearBtnBerichteEl) prevYearBtnBerichteEl.addEventListener('click', () => changeYear(-1, 'monatAuswahlBerichte', 'currentYearDisplayBerichte', 'prevYearBtnBerichte', 'nextYearBtnBerichte', 'monthButtonContainerBerichte'));
+            
+            const nextYearBtnBerichteEl = document.getElementById('nextYearBtnBerichte');
+            if(nextYearBtnBerichteEl) nextYearBtnBerichteEl.addEventListener('click', () => changeYear(1, 'monatAuswahlBerichte', 'currentYearDisplayBerichte', 'prevYearBtnBerichte', 'nextYearBtnBerichte', 'monthButtonContainerBerichte'));
+
+            const monthButtonContainerBerichteEl = document.getElementById('monthButtonContainerBerichte');
+            if(monthButtonContainerBerichteEl) {
+                 monthButtonContainerBerichteEl.addEventListener('click', (event) => {
+                    if (event.target.tagName === 'BUTTON' && event.target.dataset.month) {
+                        const targetInputId = 'monatAuswahlBerichte'; 
+                        const monatAuswahlInput = document.getElementById(targetInputId);
+                        const currentYear = monatAuswahlInput.value.split('-')[0];
+                        monatAuswahlInput.value = `${currentYear}-${event.target.dataset.month}`;
+                        monatAuswahlInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+            const druckBerichteBtn = document.getElementById("druckeBerichteBtn");
+            if(druckBerichteBtn) druckBerichteBtn.addEventListener("click", druckeBerichte);
+
+            // Chart Filter Listeners
+            if(monatAuswahlChartEl) {
+                monatAuswahlChartEl.addEventListener("change", () => {
+                    updateYearMonthDisplay('monatAuswahlChart', 'currentYearDisplayChart', 'prevYearBtnChart', 'nextYearBtnChart', 'monthButtonContainerChart');
+                    ladeUndZeigeStundenChart();
+                });
+            }
+            const praktikantenFilterChartEl = document.getElementById("praktikantenFilterChart");
+            if(praktikantenFilterChartEl) praktikantenFilterChartEl.addEventListener("change", ladeUndZeigeStundenChart);
+
+            const prevYearBtnChartEl = document.getElementById('prevYearBtnChart');
+            if(prevYearBtnChartEl) prevYearBtnChartEl.addEventListener('click', () => changeYear(-1, 'monatAuswahlChart', 'currentYearDisplayChart', 'prevYearBtnChart', 'nextYearBtnChart', 'monthButtonContainerChart'));
+            
+            const nextYearBtnChartEl = document.getElementById('nextYearBtnChart');
+            if(nextYearBtnChartEl) nextYearBtnChartEl.addEventListener('click', () => changeYear(1, 'monatAuswahlChart', 'currentYearDisplayChart', 'prevYearBtnChart', 'nextYearBtnChart', 'monthButtonContainerChart'));
+
+            const monthButtonContainerChartEl = document.getElementById('monthButtonContainerChart');
+            if(monthButtonContainerChartEl) {
+                 monthButtonContainerChartEl.addEventListener('click', (event) => {
+                    if (event.target.tagName === 'BUTTON' && event.target.dataset.month) {
+                        const monatAuswahlInput = document.getElementById('monatAuswahlChart');
+                        const currentYear = monatAuswahlInput.value.split('-')[0];
+                        monatAuswahlInput.value = `${currentYear}-${event.target.dataset.month}`;
+                        monatAuswahlInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+
+            // Missing Hours Filter Listeners
+            if(missingHoursMonthSelectEl) {
+                missingHoursMonthSelectEl.addEventListener("change", () => {
+                    updateYearMonthDisplay('missingHoursMonthSelect', 'currentYearDisplayMissingHours', 'prevYearBtnMissingHours', 'nextYearBtnMissingHours', 'monthButtonContainerMissingHours');
+                    ladeUndZeigeFehlendeStunden(missingHoursMonthSelectEl.value);
+                });
+            }
+            const prevYearBtnMissingHoursEl = document.getElementById('prevYearBtnMissingHours');
+            if(prevYearBtnMissingHoursEl) prevYearBtnMissingHoursEl.addEventListener('click', () => changeYear(-1, 'missingHoursMonthSelect', 'currentYearDisplayMissingHours', 'prevYearBtnMissingHours', 'nextYearBtnMissingHours', 'monthButtonContainerMissingHours'));
+            
+            const nextYearBtnMissingHoursEl = document.getElementById('nextYearBtnMissingHours');
+            if(nextYearBtnMissingHoursEl) nextYearBtnMissingHoursEl.addEventListener('click', () => changeYear(1, 'missingHoursMonthSelect', 'currentYearDisplayMissingHours', 'prevYearBtnMissingHours', 'nextYearBtnMissingHours', 'monthButtonContainerMissingHours'));
+
+            const monthButtonContainerMissingHoursEl = document.getElementById('monthButtonContainerMissingHours');
+            if(monthButtonContainerMissingHoursEl) {
+                 monthButtonContainerMissingHoursEl.addEventListener('click', (event) => {
+                    if (event.target.tagName === 'BUTTON' && event.target.dataset.month) {
+                        const monatAuswahlInput = document.getElementById('missingHoursMonthSelect');
+                        const currentYear = monatAuswahlInput.value.split('-')[0];
+                        monatAuswahlInput.value = `${currentYear}-${event.target.dataset.month}`;
+                        monatAuswahlInput.dispatchEvent(new Event('change'));
+                    }
+                });
+            }
+
+            // Attach listener for the save button in the absence modal
+            const adminSaveAbsenceButtonEl = document.getElementById('adminSaveAbsenceButton');
+            if (adminSaveAbsenceButtonEl) {
+                // Clone and replace to avoid duplicate listeners if DOMContentLoaded fires unexpectedly multiple times
+                const newAdminSaveBtn = adminSaveAbsenceButtonEl.cloneNode(true);
+                adminSaveAbsenceButtonEl.parentNode.replaceChild(newAdminSaveBtn, adminSaveAbsenceButtonEl);
+                newAdminSaveBtn.addEventListener('click', adminSaveAbsence);
+            }
+        });
+    </script>
+</body>
+</html>

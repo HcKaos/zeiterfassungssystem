@@ -1,0 +1,283 @@
+.container {
+    max-width: 800px;
+}
+
+.btn {
+    margin: 5px;
+}
+
+table {
+    margin-top: 20px;
+}
+.logo-img {
+    width: auto;
+    max-width: 80%;        /* Max Breite zum Container */
+    height: auto;
+    max-height: 100px;     /* Maximale Höhe */
+    object-fit: contain;   /* Behält Bildverhältnis bei */
+    margin: 0 auto 20px;   /*  Bild zentrieren mit Abstand unten */
+}
+
+/* Dashboard  */
+body {
+    padding-top: 56px; /* Höhe der Navbar */
+}
+
+/* Auto-cutoff styling for admin dashboard */
+.auto-cutoff-entry {
+    background-color: #fff3cd !important; /* Light yellow background */
+    border-left: 4px solid #ffc107 !important; /* Yellow left border */
+}
+
+.auto-cutoff-entry:hover {
+    background-color: #ffeeba !important; /* Darker yellow on hover */
+}
+
+.auto-cutoff-badge {
+    background-color: #ffc107;
+    color: #212529;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+}
+
+.auto-cutoff-icon {
+    color: #ffc107;
+    font-size: 1.1rem;
+    margin-right: 0.3rem;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    padding: 0;
+    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+}
+
+.sidebar .nav-link {
+    color: #333;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+}
+
+.sidebar .nav-link:hover {
+    color: #0d6efd;
+}
+
+.sidebar .nav-link.active {
+    color: #0d6efd;
+}
+
+.sidebar .nav-link i {
+    margin-right: 0.5rem;
+}
+
+/* MainInhalt */
+main {
+    padding-top: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: static;
+        height: auto;
+        padding-top: 0;
+    }
+
+    main {
+        margin-left: 0 !important;
+    }
+}
+
+/* Cards */
+.card {
+    margin-bottom: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-title {
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+/* Print */
+@media print {
+    @page {
+        size: A4;
+        margin: 2cm;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+    
+    #druckBereich, #druckBereich * {
+        visibility: visible !important;
+    }
+    
+    #druckBereich {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+    }
+    
+    .woche-container {
+        page-break-after: always;
+        margin-bottom: 30px;
+    }
+    
+    .tag-eintrag {
+        page-break-inside: avoid;
+    }
+
+    /* Tabelle */
+    table {
+        width: 100%;
+        margin-bottom: 20px;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    .woche-header {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+    }
+
+    .btn-print {
+        display: none !important;
+    }
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 2cm;
+    }
+    /* Hide elements not meant for printing */
+    body > .navbar,
+    body > .container-fluid > .row > #sidebar,
+    body > .container-fluid > .row > main > *:not(.print-section), /* Hide direct children of main except print section */
+    .modal, .btn, #praktikantenFilter, #monatAuswahl, #logoutButton, .btn-group /* Hide specific interactive elements */
+     {
+        display: none !important;
+        visibility: hidden !important; /* Add visibility for good measure */
+    }
+
+    /* Make the print section visible and ensure it's positioned correctly */
+    .print-section {
+        display: block !important; /* Make it visible */
+        visibility: visible !important;
+        position: absolute;        /* Position at top-left for printing */
+        left: 0;
+        top: 0;
+        width: 100%;               /* Take full width */
+        margin: 0;                 /* Reset margins */
+        padding: 0;                /* Reset padding */
+    }
+     
+    .print-section * {
+        visibility: visible !important;
+    }
+
+    
+    .woche-container {
+        page-break-after: always;
+        margin-bottom: 30px;
+    }
+    .tag-eintrag {
+        page-break-inside: avoid;
+    }
+    table {
+        width: 100%;
+        margin-bottom: 20px;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #000;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #f0f0f0;
+    }
+    .woche-header {
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+    }
+}
+input[type="month"] {
+    min-width: 200px;
+}
+input[type="month"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    padding: 5px;
+}
+.print-section {
+    display: none;
+}
+/* Styles for aligned Praktikanten tables */
+.aligned-praktikanten-table {
+    table-layout: fixed; /* Important for fixed column widths */
+    width: 100%; /* Ensure table takes full width */
+}
+
+.aligned-praktikanten-table th,
+.aligned-praktikanten-table td {
+    word-wrap: break-word; /* Prevent long words from breaking layout */
+    vertical-align: middle; /* Align content vertically */
+}
+
+.aligned-praktikanten-table th:nth-child(1),
+.aligned-praktikanten-table td:nth-child(1) { /* ID */
+    width: 5%;
+}
+
+.aligned-praktikanten-table th:nth-child(2),
+.aligned-praktikanten-table td:nth-child(2) { /* Name */
+    width: 25%;
+}
+
+.aligned-praktikanten-table th:nth-child(3),
+.aligned-praktikanten-table td:nth-child(3) { /* Rolle */
+    width: 15%;
+}
+
+.aligned-praktikanten-table th:nth-child(4),
+.aligned-praktikanten-table td:nth-child(4) { /* Status */
+    width: 10%;
+    text-align: center; /* Center status badge */
+}
+
+.aligned-praktikanten-table th:nth-child(5),
+.aligned-praktikanten-table td:nth-child(5) { /* Jährl. Urlaubst. */
+    width: 15%;
+    text-align: center;
+}
+
+.aligned-praktikanten-table th:nth-child(6),
+.aligned-praktikanten-table td:nth-child(6) { /* Aktionen */
+    width: 30%;
+    text-align: left; /* Align buttons to the left */
+}
+
+/* Ensure button groups in Aktionen don't wrap excessively if space is tight */
+.aligned-praktikanten-table td:nth-child(6) .btn-group {
+    white-space: nowrap;
+}

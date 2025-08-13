@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Zeiterfassung</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .sortable-header {
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .sortable-header:hover {
+            background-color: rgba(13, 110, 253, 0.1);
+        }
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 0.8em;
+            color: #6c757d;
+            transition: color 0.2s;
+        }
+        .segment-row {
+            border-left: 3px solid #0d6efd;
+        }
+        .expand-btn {
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .berichte-row {
+            transition: all 0.3s ease;
+        }
+        
+        /* Auto cut-off entry styling */
+        .auto-cutoff-entry {
+            background-color: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+        }
+        
+        /* Ensure table columns maintain their width */
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        
+        /* Fix table layout */
+        .table {
+            table-layout: fixed;
+        }
+        
+        /* Action buttons container */
+        .table tbody td:last-child {
+            white-space: nowrap;
+            padding-right: 1rem;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <img src="images/logo-placeholder.svg" alt="Logo" height="30" class="d-inline-block align-text-top">
+                Zeiterfassung Praktikanten
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="logoutButton"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-4">
+                    <ul class="nav flex-column">                                                
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="bi bi-calendar3"></i> Übersicht
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="berichteLink">
+                                <i class="bi bi-file-text"></i> Berichte
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" id="profileLink">
+                                <i class="bi bi-person-circle"></i> Profil
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Zeiterfassung <button id="hintButton" class="btn btn-sm btn-outline-secondary ms-2" title="Benutzung der Zeiterfassung anzeigen"><i class="bi bi-question-circle"></i></button></h1>
+                </div>
+                
+                <!-- Content -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Zeiterfassung</h5>
+                                <div class="text-center mb-4">
+                                    <h2 id="current-time">08:00</h2>
+                                    <p id="current-date" class="text-muted"></p>
+                                </div>
+                                <div class="form-group mb-3">
+                                    <label for="arbeitsBericht" class="form-label">Tätigkeitsbericht</label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="arbeitsBericht" 
+                                        rows="3" 
+                                        placeholder="Beschreibe deine geleistete Arbeit..."
+                                    ></textarea>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button id="startButton" class="btn btn-success btn-lg">
+                                        <i class="bi bi-play-circle"></i> Arbeit beginnen
+                                    </button>
+                                    <button id="stopButton" class="btn btn-danger btn-lg" style="display: none;">
+                                        <i class="bi bi-stop-circle"></i> Arbeit pausieren
+                                    </button>
+                                    <button id="endDay" class="btn btn-warning btn-lg">
+                                        <i class="bi bi-box-arrow-right"></i> Arbeitstag beenden
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card" id="benutzungHintCard">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Benutzung der Zeiterfassung</h5>
+                                <button type="button" class="btn-close" aria-label="Close" id="closeHintCard"></button>
+                            </div>
+                            <div class="card-body" id="hintCardBody">
+                                <p class="card-text">Hier kannst du deine tägliche Arbeitszeiten erfassen. Wird der Button Arbeit beginnen betätigt zählt deine Arbeitszeit von 8 Stunden runter. Wenn du deine Arbeitszeit erledigt hast und der Timer auf 0 steht, kann der Arbeitstag erfolgreich mit dem Button Arbeitstag beenden, abgeschlossen werden.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Absences Card -->
+                <div id="dashboardAbsencesCardContainer"> <!-- Wrapper div -->
+                    <div class="row mt-3"> <!-- Add a new row for the absences card -->
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Meine Abwesenheiten (Krankheit/Urlaub)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Vacation Days Summary -->
+                                    <div class="row mb-3">
+                                        <div class="col-12">
+                                            <div class="alert alert-secondary">
+                                                <h6 class="mb-2"><i class="bi bi-calendar-check"></i> Urlaubstage Übersicht</h6>
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <span class="badge bg-primary">Jährlich verfügbar: <span id="totalVacationDays">--</span></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <span class="badge bg-warning">Bereits genommen: <span id="usedVacationDays">--</span></span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <span class="badge bg-success">Verbleibend: <span id="remainingVacationDays">--</span></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive mb-3">
+                                        <table class="table table-sm table-striped" id="dashboardAbsencesTable"> <!-- Added unique ID -->
+                                            <thead>
+                                                <tr>
+                                                    <th>Typ</th>
+                                                    <th>Startdatum</th>
+                                                    <th>Enddatum</th>
+                                                    <th>Beschreibung</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Absence rows will be populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Optionally add the "Add Absence" button here too -->
+                                    <!-- <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAbsenceModal">
+                                        <i class="bi bi-plus-circle"></i> Abwesenheit hinzufügen
+                                    </button> -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> <!-- End wrapper div -->
+
+                <div class="row"> <!-- Continue with the rest of the content in a new row -->
+                    <div class="col-md-12" id="berichteBereich" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="card-title mb-0">Meine Tätigkeitsberichte</h5>
+                                    <button id="druckButton" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-printer"></i> Ausgewählten Monat drucken
+                                    </button>
+                                </div>
+                                <div class="row align-items-center">
+                                    <div class="col-md-auto">
+                                        <label for="monatAuswahlBerichtePraktikant" class="form-label me-1 visually-hidden">Monat/Jahr:</label>
+                                        <input type="month" id="monatAuswahlBerichtePraktikant" class="form-control-sm d-inline-block" style="width: auto;">
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <button class="btn btn-sm btn-outline-secondary" id="prevYearBtnBerichtePraktikant"><i class="bi bi-arrow-left-short"></i></button>
+                                        <strong id="currentYearDisplayBerichtePraktikant" class="mx-2 align-middle">YYYY</strong>
+                                        <button class="btn btn-sm btn-outline-secondary" id="nextYearBtnBerichtePraktikant"><i class="bi bi-arrow-right-short"></i></button>
+                                    </div>
+                                </div>
+                                <div class="btn-toolbar mt-2 mb-2" role="toolbar" aria-label="Monatsauswahl Berichte Praktikant">
+                                    <div class="btn-group btn-group-sm flex-wrap" role="group" id="monthButtonContainerBerichtePraktikant">
+                                        <!-- Month buttons will be generated here by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th class="sortable-header" data-sort="datum" style="cursor: pointer; width: 12%;">Datum <span class="sort-indicator">⇅</span></th>
+                                                <th class="sortable-header" data-sort="startzeit" style="cursor: pointer; width: 10%;">Startzeit <span class="sort-indicator">⇅</span></th>
+                                                <th class="sortable-header" data-sort="endzeit" style="cursor: pointer; width: 10%;">Endzeit <span class="sort-indicator">⇅</span></th>
+                                                <th class="sortable-header" data-sort="dauer" style="cursor: pointer; width: 10%;">Dauer <span class="sort-indicator">⇅</span></th>
+                                                <th class="sortable-header" data-sort="bericht" style="cursor: pointer; width: 40%;">Tätigkeitsbericht <span class="sort-indicator">⇅</span></th>
+                                                <th style="width: 18%; text-align: right;">Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="berichteTabelle">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Profile Section -->
+                    <div class="col-md-12" id="profileBereich" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Profil bearbeiten</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- User Details Form -->
+                                <form id="userDetailsForm">
+                                    <h6>Persönliche Daten</h6>
+                                    <div class="mb-3">
+                                        <label for="profileFirstName" class="form-label">Vorname</label>
+                                        <input type="text" class="form-control" id="profileFirstName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileLastName" class="form-label">Nachname</label>
+                                        <input type="text" class="form-control" id="profileLastName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEmail" class="form-label">E-Mail</label>
+                                        <input type="email" class="form-control" id="profileEmail" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileAddress" class="form-label">Adresse</label>
+                                        <input type="text" class="form-control" id="profileAddress">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profilePhone" class="form-label">Telefonnummer</label>
+                                        <input type="tel" class="form-control" id="profilePhone">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileEducationProvider" class="form-label">Bildungsträger und Standort</label>
+                                        <input type="text" class="form-control" id="profileEducationProvider">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileInternshipStart" class="form-label">Praktikumszeit 1 von-bis</label>
+                                        <input type="text" class="form-control" id="profileInternshipStart" placeholder="z.B. 01.01.2024 - 30.06.2024">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileInternshipEnd" class="form-label">Praktikumszeit 2 von-bis (optional)</label>
+                                        <input type="text" class="form-control" id="profileInternshipEnd" placeholder="z.B. 01.07.2024 - 31.12.2024">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="profileAllgemeineNotizen" class="form-label">Allgemeine Notizen</label>
+                                        <textarea class="form-control" id="profileAllgemeineNotizen" rows="3" placeholder="Z.B. Programmiersprachen, Skills, Interessen, Geplante Urlaube, längere Abwesenheiten..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Persönliche Daten speichern</button>
+                                </form>
+
+                                <hr class="my-4">
+
+                                <!-- Structured Absences Section -->
+                                <h6>Meine Abwesenheiten (Krankheit/Urlaub)</h6>
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-sm table-striped" id="absencesTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Typ</th>
+                                                <th>Startdatum</th>
+                                                <th>Enddatum</th>
+                                                <th>Beschreibung</th>
+                                                <th>Aktionen</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Absence rows will be populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addAbsenceModal" id="addAbsenceButton">
+                                    <i class="bi bi-plus-circle"></i> Abwesenheit hinzufügen
+                                </button>
+
+                                <hr class="my-4">
+                                <!-- Change Password Form -->
+                                <form id="changePasswordForm">
+                                    <h6>Passwort ändern</h6>
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Aktuelles Passwort</label>
+                                        <input type="password" class="form-control" id="currentPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">Neues Passwort</label>
+                                        <input type="password" class="form-control" id="newPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmNewPassword" class="form-label">Neues Passwort bestätigen</label>
+                                        <input type="password" class="form-control" id="confirmNewPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">Passwort ändern</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+<!-- Add/Edit Absence Modal -->
+    <div class="modal fade" id="addAbsenceModal" tabindex="-1" aria-labelledby="addAbsenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAbsenceModalLabel">Abwesenheit hinzufügen/bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addAbsenceForm">
+                        <input type="hidden" id="absenceIdInput"> <!-- For editing existing absence -->
+                        <div class="mb-3">
+                            <label for="absenceType" class="form-label">Typ der Abwesenheit</label>
+                            <select class="form-select" id="absenceType" required>
+                                <option value="" disabled selected>Bitte auswählen...</option>
+                                <option value="Krankheit">Krankheit</option>
+                                <option value="Urlaub">Urlaub</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="absenceStartDate" class="form-label">Startdatum</label>
+                            <input type="date" class="form-control" id="absenceStartDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="absenceEndDate" class="form-label">Enddatum</label>
+                            <input type="date" class="form-control" id="absenceEndDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="absenceDescription" class="form-label">Beschreibung (optional)</label>
+                            <textarea class="form-control" id="absenceDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveAbsenceButton">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="berichtModal" tabindex="-1" aria-labelledby="berichtModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="berichtModalLabel">Tätigkeitsbericht Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Datum:</strong> <span id="modalDatum"></span></p>
+                    <p><strong>Arbeitszeit:</strong> <span id="modalZeit"></span></p>
+                    <hr>
+                    <p id="berichtModalText"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Modal für Bericht bearbeiten (Praktikant) -->
+    <div class="modal fade" id="editBerichtModal" tabindex="-1" aria-labelledby="editBerichtModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBerichtModalLabel">Tätigkeitsbericht bearbeiten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Info message about editing limitations -->
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <div>
+                            <strong>Hinweis:</strong> Timer-Tätigkeitsberichte und Systemeintragungen können nur bearbeitet werden. 
+                            Nur selbsterstellte Ergänzungen können geändert und gelöscht werden. 
+                            Das Löschen von Einträgen ist nur für Administratoren möglich.
+                        </div>
+                    </div>
+                    
+                    <!-- Info message about time range format -->
+                    <div class="alert alert-secondary d-flex align-items-center mb-3" role="alert">
+                        <i class="bi bi-clock me-2"></i>
+                        <div>
+                            <strong>Formatierung:</strong> Bei zusammengefassten Einträgen mit mehreren Arbeitssegmenten 
+                            werden die Texte mit Zeitangaben <code>[08:00-12:00]</code> angezeigt, um die einzelnen 
+                            Arbeitsperioden zu unterscheiden.
+                        </div>
+                    </div>
+                    
+                    <form id="editBerichtForm">
+                        <input type="hidden" id="editBerichtIdInput">
+                        <div class="mb-3">
+                            <label for="editBerichtTextarea" class="form-label">Berichtstext</label>
+                            <textarea class="form-control" id="editBerichtTextarea" rows="5" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                    <button type="button" class="btn btn-primary" id="saveEditedBerichtButton">Speichern</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="logger.js"></script>
+    <script src="zeiterfassung.js"></script>       
+    <script>
+        // --- Date Navigation Helper Functions (Adapted for Praktikant Berichte) ---
+        function generatePraktikantMonthButtons() {
+            const containerId = 'monthButtonContainerBerichtePraktikant';
+            const targetMonthInputId = 'monatAuswahlBerichtePraktikant';
+            const container = document.getElementById(containerId);
+            if (!container) { logger.warn("Praktikant month button container not found:", containerId); return; }
+            container.innerHTML = '';
+            const months = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+            months.forEach((monthName, index) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('btn', 'btn-sm', 'btn-outline-primary', 'm-1');
+                button.textContent = monthName;
+                button.dataset.month = (index + 1).toString().padStart(2, '0');
+                button.addEventListener('click', function() {
+                    const monatAuswahlInput = document.getElementById(targetMonthInputId);
+                    if (monatAuswahlInput && monatAuswahlInput.value) {
+                        const currentYear = monatAuswahlInput.value.split('-')[0];
+                        monatAuswahlInput.value = `${currentYear}-${this.dataset.month}`;
+                        monatAuswahlInput.dispatchEvent(new Event('change'));
+                    }
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function updatePraktikantYearMonthDisplay() {
+            const monatAuswahlId = 'monatAuswahlBerichtePraktikant';
+            const yearDisplayId = 'currentYearDisplayBerichtePraktikant';
+            const prevBtnId = 'prevYearBtnBerichtePraktikant';
+            const nextBtnId = 'nextYearBtnBerichtePraktikant';
+            const monthContainerId = 'monthButtonContainerBerichtePraktikant';
+
+            const monatAuswahl = document.getElementById(monatAuswahlId);
+            const currentYearDisplay = document.getElementById(yearDisplayId);
+            const prevYearBtn = document.getElementById(prevBtnId);
+            const nextYearBtn = document.getElementById(nextBtnId);
+
+            if (!monatAuswahl || !currentYearDisplay || !prevYearBtn || !nextYearBtn) {
+                logger.warn("Missing elements for Praktikant year/month display for", monatAuswahlId); return;
+            }
+            
+            if (!monatAuswahl.value) {
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                monatAuswahl.value = formatMV(heute);
+            }
+
+            const [currentYearStr, currentMonthVal] = monatAuswahl.value.split('-');
+            const currentYear = parseInt(currentYearStr);
+            currentYearDisplay.textContent = currentYearStr;
+
+            const fiveYearsAgo = new Date().getFullYear() - 5;
+            const oneYearHence = new Date().getFullYear() + 1;
+            monatAuswahl.min = `${fiveYearsAgo}-01`;
+            monatAuswahl.max = `${oneYearHence}-12`;
+
+            prevYearBtn.disabled = (currentYear <= fiveYearsAgo);
+            nextYearBtn.disabled = (currentYear >= oneYearHence);
+            
+            const monthButtons = document.querySelectorAll(`#${monthContainerId} .btn`);
+            if (monthButtons.length > 0) {
+                monthButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.month === currentMonthVal) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        function changePraktikantBerichteYear(offset) {
+            const monatAuswahlId = 'monatAuswahlBerichtePraktikant';
+            const monatAuswahl = document.getElementById(monatAuswahlId);
+            if (!monatAuswahl.value) {
+                 const heute = new Date();
+                 monatAuswahl.value = `${heute.getFullYear()}-${String(heute.getMonth()+1).padStart(2,'0')}`;
+            }
+            const [yearStr, month] = monatAuswahl.value.split('-');
+            let newYear = parseInt(yearStr) + offset;
+
+            const fiveYearsAgo = new Date().getFullYear() - 5;
+            const oneYearHence = new Date().getFullYear() + 1;
+
+            if (newYear < fiveYearsAgo) newYear = fiveYearsAgo;
+            if (newYear > oneYearHence) newYear = oneYearHence;
+            
+            monatAuswahl.value = `${newYear}-${month}`;
+            monatAuswahl.dispatchEvent(new Event('change'));
+        }
+        // --- End Date Navigation Helper Functions ---
+
+        function formatMonthName(dateString) {
+            if (!dateString || !/^\d{4}-\d{2}$/.test(dateString)) return "Ungültiger Monat";
+            const months = {"01":"Januar","02":"Februar","03":"März","04":"April","05":"Mai","06":"Juni","07":"Juli","08":"August","09":"September","10":"Oktober","11":"November","12":"Dezember"};
+            const [year, month] = dateString.split("-");
+            return `${months[month] || ''} ${year || ''}`;
+        }
+
+        function escapeHTML(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Logout
+        async function logout() {
+            try {
+                const response = await fetch("/api/auth/logout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include"
+                });
+                if (!response.ok) throw new Error("Logout fehlgeschlagen");
+                localStorage.removeItem("userRole");
+                window.location.href = "/login.html";
+            } catch (fehler) {
+                logger.error("Logout Fehler:", fehler);
+                alert("Logout fehlgeschlagen. Bitte versuchen Sie es später erneut.");
+            }
+        }
+
+        // Umschalten der Ansicht
+        function zeigeZeiterfassung() {
+            document.querySelectorAll(".col-md-6").forEach(el => { el.style.display = "block"; });
+            document.getElementById("berichteBereich").style.display = "none";
+            document.getElementById("profileBereich").style.display = "none";
+            document.getElementById("dashboardAbsencesCardContainer").style.display = "block"; // Show absences card
+            localStorage.setItem('activeSection', 'overview');
+            ladeDashboardAbwesenheiten(); // Load absences when showing the overview
+        }
+
+        function zeigeBerichteBereich() {
+            document.querySelectorAll(".col-md-6").forEach(el => { el.style.display = "none"; });
+            document.getElementById("berichteBereich").style.display = "block";
+            document.getElementById("profileBereich").style.display = "none";
+            document.getElementById("dashboardAbsencesCardContainer").style.display = "none"; // Hide absences card
+            localStorage.setItem('activeSection', 'reports');
+            ladeMonatsBerichte();
+        }
+
+        function zeigeProfileBereich() {
+            document.querySelectorAll(".col-md-6").forEach(el => { el.style.display = "none"; });
+            document.getElementById("berichteBereich").style.display = "none";
+            document.getElementById("profileBereich").style.display = "block";
+            document.getElementById("dashboardAbsencesCardContainer").style.display = "none"; // Hide absences card
+            localStorage.setItem('activeSection', 'profile');
+            ladeProfildaten();
+            ladeAbwesenheiten();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            logger.debug("Dashboard wird initialisiert...");
+            initZeiterfassung(); // Assuming this is from zeiterfassung.js
+
+            // Load vacation summary for dashboard overview
+            ladeVacationSummary();
+
+            const lastActiveSection = localStorage.getItem('activeSection');
+            if (lastActiveSection === 'reports') {
+                zeigeBerichteBereich();
+            } else if (lastActiveSection === 'profile') {
+                zeigeProfileBereich();
+            } else {
+                zeigeZeiterfassung(); // Default to overview
+            }
+            
+            const logoutButton = document.getElementById("logoutButton");
+            if (logoutButton) {
+                logoutButton.addEventListener("click", (event) => { event.preventDefault(); logout(); });
+            }
+            
+            const berichteLink = document.getElementById("berichteLink");
+            // const monatAuswahl = document.getElementById("monatAuswahl"); // Original, now replaced by monatAuswahlBerichtePraktikant
+
+            // Initialize new month/year controls for Praktikant Berichte
+            const monatAuswahlBerichtePraktikantEl = document.getElementById("monatAuswahlBerichtePraktikant");
+            if (monatAuswahlBerichtePraktikantEl) {
+                generatePraktikantMonthButtons();
+                const heute = new Date();
+                const formatMV = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                if(!monatAuswahlBerichtePraktikantEl.value) monatAuswahlBerichtePraktikantEl.value = formatMV(heute);
+                updatePraktikantYearMonthDisplay(); // Initial display update
+
+                monatAuswahlBerichtePraktikantEl.addEventListener("change", () => {
+                    updatePraktikantYearMonthDisplay();
+                    ladeMonatsBerichte(); // Reload reports for the new month
+                });
+
+                const prevYearBtn = document.getElementById('prevYearBtnBerichtePraktikant');
+                if(prevYearBtn) prevYearBtn.addEventListener('click', () => changePraktikantBerichteYear(-1));
+                
+                const nextYearBtn = document.getElementById('nextYearBtnBerichtePraktikant');
+                if(nextYearBtn) nextYearBtn.addEventListener('click', () => changePraktikantBerichteYear(1));
+            }
+
+
+            if (berichteLink) {
+                berichteLink.addEventListener("click", (event) => {
+                    event.preventDefault();
+                    zeigeBerichteBereich(); // This already calls ladeMonatsBerichte if section is shown
+                    // Ensure display is updated if already on reports tab and just clicking link again
+                    if (document.getElementById("berichteBereich").style.display === "block") {
+                         if(monatAuswahlBerichtePraktikantEl && !monatAuswahlBerichtePraktikantEl.value) {
+                            const heute = new Date();
+                            monatAuswahlBerichtePraktikantEl.value = `${heute.getFullYear()}-${String(heute.getMonth()+1).padStart(2,'0')}`;
+                         }
+                         updatePraktikantYearMonthDisplay();
+                         ladeMonatsBerichte();
+                    }
+                });
+            }
+
+            const uebersichtLink = document.querySelector("#sidebar .nav-item:first-child .nav-link");
+            if (uebersichtLink) {
+                uebersichtLink.addEventListener("click", (event) => { event.preventDefault(); zeigeZeiterfassung(); });
+            }
+            
+            const profileLink = document.getElementById("profileLink");
+            if (profileLink) {
+                profileLink.addEventListener("click", (event) => { event.preventDefault(); zeigeProfileBereich(); });
+            }
+
+            const userDetailsForm = document.getElementById('userDetailsForm');
+            if (userDetailsForm) {
+                userDetailsForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    const userProfileData = {
+                        vorname: document.getElementById('profileFirstName').value,
+                        nachname: document.getElementById('profileLastName').value,
+                        adresse: document.getElementById('profileAddress').value,
+                        telefonnummer: document.getElementById('profilePhone').value,
+                        bildungstraeger: document.getElementById('profileEducationProvider').value,
+                        praktikumszeit_1_von_bis: document.getElementById('profileInternshipStart').value,
+                        praktikumszeit_2_von_bis: document.getElementById('profileInternshipEnd').value,
+                        allgemeine_notizen: document.getElementById('profileAllgemeineNotizen').value
+                    };
+                    try {
+                        const response = await fetch('/api/users/me/profile', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(userProfileData),
+                            credentials: "include"
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('Profil erfolgreich aktualisiert!');
+                        } else {
+                            alert('Fehler beim Aktualisieren des Profils: ' + (result.message || 'Unbekannter Fehler'));
+                        }
+                    } catch (err) {
+                        logger.error("Fehler beim Speichern des Profils:", err);
+                        alert('Netzwerkfehler oder Server nicht erreichbar beim Speichern des Profils.');
+                    }
+                });
+            }
+            
+            const changePasswordForm = document.getElementById('changePasswordForm');
+            if (changePasswordForm) {
+                changePasswordForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+                    if (newPassword !== confirmNewPassword) {
+                        alert('Die neuen Passwörter stimmen nicht überein.');
+                        return;
+                    }
+                    if (!newPassword) { // Basic validation for new password
+                        alert('Das neue Passwort darf nicht leer sein.');
+                        return;
+                    }
+
+                    logger.debug('Passwort ändern angefragt.');
+
+                    try {
+                        const response = await fetch('/api/users/me/password', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ currentPassword, newPassword }),
+                            credentials: 'include'
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                            alert('Passwort erfolgreich geändert!');
+                            changePasswordForm.reset();
+                        } else {
+                            alert('Fehler beim Ändern des Passworts: ' + (result.message || 'Unbekannter Fehler.'));
+                        }
+                    } catch (err) {
+                        logger.error("Fehler beim Ändern des Passworts:", err);
+                        alert('Netzwerkfehler oder Server nicht erreichbar beim Ändern des Passworts.');
+                    }
+                });
+            }
+
+            const addAbsenceBtn = document.getElementById('addAbsenceButton');
+            if(addAbsenceBtn) { 
+                addAbsenceBtn.addEventListener('click', openAddAbsenceModal); 
+            }
+            const saveAbsenceModalButton = document.getElementById('saveAbsenceButton');
+            if(saveAbsenceModalButton) {
+                saveAbsenceModalButton.addEventListener('click', handleSaveAbsence);
+            }
+            
+            const saveEditedBerichtButton = document.getElementById('saveEditedBerichtButton');
+            if (saveEditedBerichtButton) {
+                saveEditedBerichtButton.addEventListener('click', saveEditedBericht);
+            } else {
+                logger.warn("Speichern-Button für Berichts-Edit nicht gefunden. Listener nicht angehängt.");
+            }
+
+            // This event listener is now redundant because it's handled in zeiterfassung.js
+            // const druckButton = document.getElementById("druckButton");
+            // if (druckButton) {
+            //     druckButton.addEventListener("click", () => {
+            //         if (typeof druckeBerichte === 'function') {
+            //             druckeBerichte();
+            //         } else {
+            //             logger.error("druckeBerichte function not found. Ensure zeiterfassung.js is loaded correctly.");
+            //             alert("Druckfunktion ist nicht verfügbar.");
+            //         }
+            //     });
+            // }
+// Initial load if overview is the default section
+         if (localStorage.getItem('activeSection') !== 'reports' && localStorage.getItem('activeSection') !== 'profile') {
+             document.addEventListener("DOMContentLoaded", ladeDashboardAbwesenheiten);
+         }
+        });
+
+        async function ladeProfildaten() {
+            try {
+                const response = await fetch('/api/users/me/profile', { credentials: 'include' });
+                if (!response.ok) {
+                    if(response.status === 401) { 
+                        alert("Sitzung abgelaufen. Bitte neu einloggen.");
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    throw new Error(`Fehler beim Laden der Profildaten (${response.status})`);
+                }
+                const result = await response.json();
+                if (result.success && result.profile) {
+                    const profile = result.profile;
+                    document.getElementById('profileFirstName').value = profile.vorname || '';
+                    document.getElementById('profileLastName').value = profile.nachname || '';
+                    document.getElementById('profileEmail').value = profile.benutzername || ''; 
+                    document.getElementById('profileEmail').readOnly = true; 
+                    document.getElementById('profileAddress').value = profile.adresse || '';
+                    document.getElementById('profilePhone').value = profile.telefonnummer || '';
+                    document.getElementById('profileEducationProvider').value = profile.bildungstraeger || '';
+                    document.getElementById('profileInternshipStart').value = profile.praktikumszeit_1_von_bis || '';
+                    document.getElementById('profileInternshipEnd').value = profile.praktikumszeit_2_von_bis || '';
+                    document.getElementById('profileAllgemeineNotizen').value = profile.allgemeine_notizen || '';
+                    
+                    // Update vacation days summary
+                    updateVacationSummary(profile);
+                } else {
+                    logger.error("Profil konnte nicht geladen werden:", result.message);
+                    alert("Profil konnte nicht geladen werden: " + (result.message || "Unbekannter Fehler"));
+                }
+            } catch (err) {
+                logger.error("Fehler beim Laden der Profildaten:", err);
+                alert('Profildaten konnten nicht geladen werden. Überprüfen Sie die Netzwerkverbindung.');
+            }
+        }
+
+        // --- Structured Absences Functions ---
+        let currentEditingAbsenceId = null; 
+
+        async function ladeAbwesenheiten() {
+            const absencesTableBody = document.getElementById('absencesTable')?.querySelector('tbody');
+            if (!absencesTableBody) {
+                logger.warn("Abwesenheitstabelle nicht im DOM gefunden beim Laden.");
+                return;
+            }
+            absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Lade Abwesenheiten...</td></tr>';
+            try {
+                const response = await fetch('/api/absences', { credentials: 'include' });
+                if (!response.ok) {
+                    if(response.status === 401) { window.location.href = '/login.html'; return; }
+                    throw new Error('Fehler beim Laden der Abwesenheiten.');
+                }
+                const result = await response.json();
+                if (result.success && result.absences) {
+                    absencesTableBody.innerHTML = ''; 
+                    if (result.absences.length === 0) {
+                        absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Keine Abwesenheiten erfasst.</td></tr>';
+                        return;
+                    }
+                    result.absences.forEach(absence => {
+                        const row = absencesTableBody.insertRow();
+                        row.insertCell().textContent = absence.abwesenheit_typ;
+                        const startDateParts = (absence.start_datum || "---").split('-');
+                        const formattedStartDate = startDateParts.length === 3 ? `${startDateParts[2]}.${startDateParts[1]}.${startDateParts[0]}` : absence.start_datum;
+                        row.insertCell().textContent = formattedStartDate;
+
+                        const endDateParts = (absence.end_datum || "---").split('-');
+                        const formattedEndDate = endDateParts.length === 3 ? `${endDateParts[2]}.${endDateParts[1]}.${endDateParts[0]}` : absence.end_datum;
+                        row.insertCell().textContent = formattedEndDate;
+
+                        row.insertCell().textContent = absence.beschreibung || '-';
+                        const actionsCell = row.insertCell();
+                        actionsCell.innerHTML = ''; 
+
+                        const editButton = document.createElement('button');
+                        editButton.className = 'btn btn-sm btn-warning me-1';
+                        editButton.innerHTML = '<i class="bi bi-pencil"></i>';
+                        editButton.onclick = function() { openEditAbsenceModal(JSON.parse(JSON.stringify(absence))); };
+                        actionsCell.appendChild(editButton);
+
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'btn btn-sm btn-danger';
+                        deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+                        deleteButton.onclick = function() { handleDeleteAbsence(absence.id); };
+                        actionsCell.appendChild(deleteButton);
+                    });
+                } else {
+                    absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Abwesenheiten konnten nicht geladen werden.</td></tr>';
+                }
+            } catch (err) {
+                logger.error("Fehler ladeAbwesenheiten:", err);
+                absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Fehler beim Laden.</td></tr>';
+            }
+        }
+
+        function openAddAbsenceModal() {
+            currentEditingAbsenceId = null;
+            document.getElementById('addAbsenceForm').reset();
+            document.getElementById('absenceIdInput').value = ''; 
+            document.getElementById('addAbsenceModalLabel').textContent = 'Abwesenheit hinzufügen';
+        }
+        
+        window.openEditAbsenceModal = function(absence) { 
+            currentEditingAbsenceId = absence.id;
+            document.getElementById('addAbsenceModalLabel').textContent = 'Abwesenheit bearbeiten';
+            document.getElementById('absenceIdInput').value = absence.id;
+            document.getElementById('absenceType').value = absence.abwesenheit_typ;
+            document.getElementById('absenceStartDate').value = absence.start_datum; 
+            document.getElementById('absenceEndDate').value = absence.end_datum;   
+            document.getElementById('absenceDescription').value = absence.beschreibung || '';
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addAbsenceModal'));
+            modal.show();
+        }
+
+        window.handleDeleteAbsence = async function(absenceId) { 
+            if (!confirm("Möchten Sie diese Abwesenheit wirklich löschen?")) return;
+            try {
+                const response = await fetch(`/api/absences/${absenceId}`, { method: 'DELETE', credentials: 'include' });
+                const result = await response.json();
+                if (result.success) {
+                    alert("Abwesenheit erfolgreich gelöscht.");
+                    ladeAbwesenheiten();
+                } else {
+                    alert('Fehler beim Löschen: ' + (result.message || 'Unbekannter Fehler.'));
+                }
+            } catch (err) {
+                logger.error("Fehler handleDeleteAbsence:", err);
+                alert('Netzwerkfehler oder Server nicht erreichbar.');
+            }
+        }
+
+        async function handleSaveAbsence() {
+            const absenceData = {
+                abwesenheit_typ: document.getElementById('absenceType').value,
+                start_datum: document.getElementById('absenceStartDate').value,
+                end_datum: document.getElementById('absenceEndDate').value,
+                beschreibung: document.getElementById('absenceDescription').value
+            };
+
+            if (!absenceData.abwesenheit_typ || !absenceData.start_datum || !absenceData.end_datum) {
+                alert("Typ, Startdatum und Enddatum sind erforderlich.");
+                return;
+            }
+            if (new Date(absenceData.end_datum) < new Date(absenceData.start_datum)) {
+                alert("Das Enddatum darf nicht vor dem Startdatum liegen.");
+                return;
+            }
+
+            const url = currentEditingAbsenceId ? `/api/absences/${currentEditingAbsenceId}` : '/api/absences';
+            const method = currentEditingAbsenceId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(absenceData),
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Abwesenheit erfolgreich ${currentEditingAbsenceId ? 'aktualisiert' : 'gespeichert'}!`);
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('addAbsenceModal'));
+                    if (modalInstance) modalInstance.hide();
+                    ladeAbwesenheiten();
+                } else {
+                    alert('Fehler: ' + (result.message || 'Unbekannter Fehler.'));
+                }
+            } catch (err) {
+                logger.error("Fehler handleSaveAbsence:", err);
+                alert('Netzwerkfehler oder Server nicht erreichbar.');
+            }
+        }
+        // --- End Structured Absences Functions ---
+        
+        // Berichte laden
+        async function ladeMonatsBerichte() {
+            const monatAuswahlInput = document.getElementById("monatAuswahlBerichtePraktikant");
+            let selectedMonth = monatAuswahlInput ? monatAuswahlInput.value : null;
+
+            if (!selectedMonth) {
+                const heute = new Date();
+                selectedMonth = `${heute.getFullYear()}-${String(heute.getMonth() + 1).padStart(2, '0')}`;
+                if (monatAuswahlInput) monatAuswahlInput.value = selectedMonth; // Set it if it was empty
+                updatePraktikantYearMonthDisplay(); // Update display based on new default
+            }
+            
+            const berichteTabelle = document.getElementById("berichteTabelle");
+            if (!berichteTabelle) { logger.error("Berichte Tabelle nicht gefunden."); return; }
+
+            berichteTabelle.innerHTML = '<tr><td colspan="5" class="text-center">Berichte werden geladen...</td></tr>';
+            
+            try {
+                // Add cache-busting timestamp to ensure fresh data
+                const response = await fetch(`/api/berichte/monat/${selectedMonth}?t=${Date.now()}`, { 
+                    credentials: "include",
+                    cache: "no-cache"
+                });
+                if (!response.ok) {
+                    let errorMsg = `Fehler beim Laden der Berichte für ${selectedMonth}`;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData && errorData.message) {
+                            errorMsg = errorData.message;
+                        }
+                    } catch (e) {
+                        errorMsg = `Fehler ${response.status} für ${selectedMonth}: ${response.statusText || "Serverantwort nicht lesbar"}`;
+                    }
+                    throw new Error(errorMsg);
+                }
+                const result = await response.json();
+                
+                // Expecting { reportEntries: [], ... } from the updated /api/berichte/monat/:monat endpoint
+                const reportEntries = result.reportEntries;
+
+                if (!Array.isArray(reportEntries)) {
+                    logger.error("Antwort vom Server (reportEntries) ist kein Array:", reportEntries);
+                    throw new Error("Unerwartetes Datenformat vom Server für Berichtseinträge.");
+                }
+
+                if (reportEntries.length === 0) {
+                    berichteTabelle.innerHTML = `<tr><td colspan="5" class="text-center">Keine Einträge für ${formatMonthName(selectedMonth)} vorhanden</td></tr>`;
+                    return;
+                }
+                zeigeBerichte(reportEntries); // Pass the combined entries
+            } catch (fehler) {
+                logger.error(`Fehler beim Laden der Berichte für ${selectedMonth}:`, fehler);
+                berichteTabelle.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Fehler beim Laden der Berichte für ${formatMonthName(selectedMonth)}: ${escapeHTML(fehler.message)}</td></tr>`;
+            }
+        }
+
+        // Dashboard Berichte Sorting Functionality (User)
+        let dashboardCurrentSort = { column: 'datum', direction: 'desc' };
+        let dashboardReportEntriesData = [];
+
+        // Enhanced zeigeBerichte function with sorting and expansion support (Dashboard)
+        function zeigeBerichte(reportEntries) {
+            dashboardReportEntriesData = reportEntries;
+            
+            // Load sort state from localStorage
+            const savedSort = localStorage.getItem('dashboardBerichteSortState');
+            if (savedSort) {
+                dashboardCurrentSort = JSON.parse(savedSort);
+            }
+            
+            // Sort the data
+            const sortedEntries = sortDashboardBerichteData(reportEntries, dashboardCurrentSort.column, dashboardCurrentSort.direction);
+            
+            // Update sort indicators
+            updateDashboardSortIndicators();
+            
+            // Render the table
+            renderDashboardBerichteTable(sortedEntries);
+        }
+
+        function renderDashboardBerichteTable(reportEntries) {
+            const tabelle = document.getElementById("berichteTabelle");
+            tabelle.innerHTML = "";
+            
+            reportEntries.forEach(entry => {
+                const zeile = document.createElement("tr");
+                zeile.classList.add('berichte-row');
+                
+                // Add auto cut-off styling if applicable
+                if (entry.type === 'Arbeit' && entry.isAutoCutoff) {
+                    zeile.classList.add('auto-cutoff-entry');
+                }
+                
+                // Date cell
+                const datumCell = zeile.insertCell();
+                datumCell.textContent = entry.datum;
+                
+                // Start time cell  
+                const startzeitCell = zeile.insertCell();
+                startzeitCell.textContent = entry.type === 'Arbeit' ? (entry.startzeit || '-') : '-';
+                
+                // End time cell
+                const endzeitCell = zeile.insertCell();
+                endzeitCell.textContent = entry.type === 'Arbeit' ? (entry.endzeit || '-') : '-';
+                
+                // Duration cell
+                const dauerCell = zeile.insertCell();
+                dauerCell.textContent = entry.dauer ? (entry.type === 'Arbeit' || entry.type === 'Urlaub' ? `${entry.dauer} Std.` : entry.dauer) : '-';
+                
+                // Activity report cell
+                const berichtCell = zeile.insertCell();
+                const beschreibungText = entry.beschreibung || (entry.type === 'Urlaub' ? 'Urlaub' : entry.type === 'Krankheit' ? 'Krankheit' : '');
+                const kurzBeschreibung = beschreibungText.length > 100 ? beschreibungText.substring(0, 100) + "..." : beschreibungText;
+                berichtCell.innerHTML = `${kurzBeschreibung}${entry.isAutoCutoff ? '<br><small class="text-muted"><i class="bi bi-info-circle"></i> Timer wurde automatisch um 23:59 beendet</small>' : ''}`;
+                
+                // Actions cell (right-aligned)
+                const actionsCell = zeile.insertCell();
+                actionsCell.style.textAlign = 'right';
+                actionsCell.style.whiteSpace = 'nowrap';
+                
+                
+                if (entry.type === 'Arbeit') {
+                    // Create a right-aligned button container
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'd-flex justify-content-end align-items-center gap-1';
+                    
+                    // Add expand button first (on the left) if segments are available
+                    if (entry.segments && entry.segments.length > 1) {
+                        const expandBtn = document.createElement('button');
+                        expandBtn.className = 'btn btn-sm btn-outline-primary expand-btn';
+                        expandBtn.innerHTML = '🔽'; // Down arrow for expand
+                        expandBtn.title = `${entry.segments.length} Arbeitssegmente anzeigen`;
+                        expandBtn.style.minWidth = '32px';
+                        expandBtn.setAttribute('data-entry-id', entry.id || Math.random().toString(36));
+                        expandBtn.addEventListener('click', () => toggleDashboardSegments(expandBtn, entry));
+                        buttonContainer.appendChild(expandBtn);
+                    }
+                    
+                    // Details button
+                    const detailsButton = document.createElement("button");
+                    detailsButton.className = "btn btn-sm btn-info";
+                    detailsButton.textContent = "Details";
+                    detailsButton.addEventListener("click", () => zeigeBerichtDetails(entry.datum, `${entry.startzeit} - ${entry.endzeit}`, entry.beschreibung));
+                    buttonContainer.appendChild(detailsButton);
+                    
+                    // Edit button (only show for non-auto-cutoff entries)
+                    if (!entry.isAutoCutoff) {
+                        const editButton = document.createElement("button");
+                        editButton.className = "btn btn-sm btn-warning";
+                        editButton.textContent = "Bearbeiten";
+                        const entryIdStr = String(entry.id || '');
+                        const originalWorkEntryId = entryIdStr.startsWith('arbeit-') ? entryIdStr.substring(7) : entry.id;
+                        editButton.addEventListener('click', () => openEditBerichtModal(originalWorkEntryId, entry.beschreibung));
+                        buttonContainer.appendChild(editButton);
+                    } else {
+                        // For auto cut-off entries, show info instead of edit button
+                        const infoSpan = document.createElement('span');
+                        infoSpan.className = 'btn btn-sm btn-outline-secondary disabled';
+                        infoSpan.innerHTML = '<i class="bi bi-lock"></i> Geschützt';
+                        infoSpan.title = 'Auto cut-off Einträge können nicht bearbeitet werden';
+                        buttonContainer.appendChild(infoSpan);
+                    }
+                    
+                    actionsCell.appendChild(buttonContainer);
+                } else {
+                    // For non-work entries (Urlaub, Krankheit), show dash centered
+                    actionsCell.innerHTML = '-';
+                    berichtCell.classList.add('text-muted');
+                }
+                
+                tabelle.appendChild(zeile);
+            });
+        }
+
+        function toggleDashboardSegments(button, entry) {
+            const row = button.closest('tr');
+            const entryId = button.getAttribute('data-entry-id');
+            const existingSegmentRows = document.querySelectorAll(`[data-dashboard-parent-id="${entryId}"]`);
+            
+            if (existingSegmentRows.length > 0) {
+                // Collapse: remove segment rows
+                existingSegmentRows.forEach(segRow => segRow.remove());
+                button.innerHTML = '🔽'; // Down arrow for expand
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-outline-primary');
+            } else {
+                // Expand: add segment rows
+                entry.segments.forEach((segment, index) => {
+                    const segmentRow = document.createElement('tr');
+                    segmentRow.className = 'segment-row';
+                    segmentRow.setAttribute('data-dashboard-parent-id', entryId);
+                    segmentRow.style.backgroundColor = '#f8f9fa';
+                    segmentRow.style.fontSize = '0.9em';
+                    
+                    // Empty date cell with indent
+                    const emptyDateCell = segmentRow.insertCell();
+                    emptyDateCell.innerHTML = `<span style="margin-left: 20px;">└─ Segment ${index + 1}</span>`;
+                    
+                    // Segment start time
+                    const segStartCell = segmentRow.insertCell();
+                    segStartCell.textContent = segment.start;
+                    
+                    // Segment end time  
+                    const segEndCell = segmentRow.insertCell();
+                    segEndCell.textContent = segment.end;
+                    
+                    // Segment duration
+                    const segDurationCell = segmentRow.insertCell();
+                    segDurationCell.textContent = segment.dauer || '00:00';
+                    
+                    // Segment report
+                    const segReportCell = segmentRow.insertCell();
+                    segReportCell.textContent = segment.bericht || 'Kein Bericht';
+                    segReportCell.style.fontStyle = 'italic';
+                    
+                    // Segment actions cell with edit button
+                    const segmentActionsCell = segmentRow.insertCell();
+                    segmentActionsCell.style.textAlign = 'right';
+                    segmentActionsCell.style.whiteSpace = 'nowrap';
+                    
+                    // Create action container for this segment
+                    const segmentActionContainer = document.createElement('div');
+                    segmentActionContainer.className = 'd-flex justify-content-end align-items-center gap-1';
+                    
+                    // Edit segment button (users can only edit, not delete)
+                    // Only show edit button if this specific segment is not an auto cut-off entry
+                    if (!segment.isAutoCutoff) {
+                        const editSegmentBtn = document.createElement('button');
+                        editSegmentBtn.className = 'btn btn-sm btn-warning';
+                        editSegmentBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                        editSegmentBtn.title = 'Tätigkeitsbericht bearbeiten';
+                        editSegmentBtn.addEventListener('click', () => editUserSegment(index, entry.id, segment, entry));
+                        segmentActionContainer.appendChild(editSegmentBtn);
+                    } else {
+                        // For auto cut-off entries, show why they can't be edited
+                        const infoSpan = document.createElement('span');
+                        infoSpan.className = 'text-muted small';
+                        infoSpan.innerHTML = '<i class="bi bi-lock"></i> Nicht bearbeitbar';
+                        infoSpan.title = 'Auto cut-off Einträge können nicht bearbeitet werden';
+                        segmentActionContainer.appendChild(infoSpan);
+                    }
+                    
+                    segmentActionsCell.appendChild(segmentActionContainer);
+                    
+                    // Insert after the parent row
+                    row.insertAdjacentElement('afterend', segmentRow);
+                });
+                
+                button.innerHTML = '🔼'; // Up arrow for collapse
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-primary');
+            }
+        }
+
+        function sortDashboardBerichteData(data, column, direction) {
+            const sortedData = [...data].sort((a, b) => {
+                let valueA, valueB;
+                
+                switch(column) {
+                    case 'datum':
+                        valueA = parseGermanDateDashboard(a.datum);
+                        valueB = parseGermanDateDashboard(b.datum);
+                        break;
+                    case 'startzeit':
+                        valueA = parseTimeDashboard(a.startzeit || '00:00');
+                        valueB = parseTimeDashboard(b.startzeit || '00:00');
+                        break;
+                    case 'endzeit':
+                        valueA = parseTimeDashboard(a.endzeit || '00:00');
+                        valueB = parseTimeDashboard(b.endzeit || '00:00');
+                        break;
+                    case 'dauer':
+                        valueA = parseDurationDashboard(a.dauer || '0');
+                        valueB = parseDurationDashboard(b.dauer || '0');
+                        break;
+                    case 'bericht':
+                        valueA = (a.beschreibung || '').toLowerCase();
+                        valueB = (b.beschreibung || '').toLowerCase();
+                        break;
+                    default:
+                        return 0;
+                }
+                
+                let comparison = 0;
+                if (valueA > valueB) comparison = 1;
+                else if (valueA < valueB) comparison = -1;
+                
+                return direction === 'asc' ? comparison : -comparison;
+            });
+            
+            return sortedData;
+        }
+
+        // Helper functions for parsing (Dashboard)
+        function parseGermanDateDashboard(dateStr) {
+            const [day, month, year] = dateStr.split('.');
+            return new Date(year, month - 1, day);
+        }
+        
+        function parseTimeDashboard(timeStr) {
+            const [hours, minutes] = timeStr.split(':');
+            return parseInt(hours || 0) * 60 + parseInt(minutes || 0);
+        }
+        
+        function parseDurationDashboard(durationStr) {
+            // Handle different duration formats
+            if (durationStr.includes('Std.')) {
+                durationStr = durationStr.replace(' Std.', '');
+            }
+            const [hours, minutes] = durationStr.split(':');
+            return parseInt(hours || 0) * 60 + parseInt(minutes || 0);
+        }
+
+        function updateDashboardSortIndicators() {
+            // Reset all indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '⇅'; // Up-down arrow
+                indicator.style.color = '#6c757d';
+            });
+            
+            // Update active indicator
+            const activeHeader = document.querySelector(`[data-sort="${dashboardCurrentSort.column}"] .sort-indicator`);
+            if (activeHeader) {
+                activeHeader.textContent = dashboardCurrentSort.direction === 'asc' ? '▲' : '▼';
+                activeHeader.style.color = '#0d6efd';
+            }
+        }
+        
+        // Make sure this function is defined globally or passed correctly if it's inside DOMContentLoaded
+        window.zeigeBerichtDetails = function(datum, zeit, berichtText) {
+            document.getElementById("modalDatum").textContent = datum;
+            document.getElementById("modalZeit").textContent = zeit;
+            // Convert line breaks to HTML for proper display
+            const berichtElement = document.getElementById("berichtModalText");
+            berichtElement.innerHTML = berichtText.replace(/\n/g, '<br>');
+            const modal = new bootstrap.Modal(document.getElementById("berichtModal"));
+            modal.show();
+        }
+        // Make sure this function is defined globally or passed correctly
+        window.openEditBerichtModal = function(berichtId, berichtText) {
+            document.getElementById('editBerichtIdInput').value = berichtId;
+            document.getElementById('editBerichtTextarea').value = berichtText; // No need to replace \\' if passing directly
+            const modal = new bootstrap.Modal(document.getElementById('editBerichtModal'));
+            modal.show();
+        }
+
+        // User segment editing function (report text only)
+        function editUserSegment(segmentIndex, parentEntryId, segment, parentEntry) {
+            // Use the segment's individual ID for editing
+            if (!segment.id) {
+                alert('Segment-ID nicht verfügbar. Bearbeitung nicht möglich.');
+                return;
+            }
+            
+            // Use existing edit modal for segment report text editing
+            document.getElementById('editBerichtIdInput').value = segment.id;
+            document.getElementById('editBerichtTextarea').value = segment.bericht || '';
+            
+            // Show the modal with segment-specific title
+            const modal = new bootstrap.Modal(document.getElementById('editBerichtModal'));
+            modal.show();
+            
+            // Update modal title to indicate this is a segment edit
+            const modalTitle = document.querySelector('#editBerichtModal .modal-title');
+            if (modalTitle) {
+                modalTitle.textContent = `Tätigkeitsbericht für Segment ${segmentIndex + 1} bearbeiten (${parentEntry.datum})`;
+            }
+        }
+
+        async function saveEditedBericht() {
+            const berichtId = document.getElementById('editBerichtIdInput').value;
+            const newBerichtText = document.getElementById('editBerichtTextarea').value.trim();
+            if (!newBerichtText) {
+                alert("Der Berichtstext darf nicht leer sein.");
+                return;
+            }
+            try {
+                const response = await fetch(`/api/berichte/${berichtId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'credentials': 'include' },
+                    body: JSON.stringify({ bericht: newBerichtText })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Unbekannter Fehler beim Speichern.' }));
+                    throw new Error(errorData.message || `Fehler beim Speichern des Berichts (Status: ${response.status})`);
+                }
+                alert("Bericht erfolgreich aktualisiert.");
+                bootstrap.Modal.getInstance(document.getElementById('editBerichtModal')).hide();
+                ladeMonatsBerichte(); 
+            } catch (error) {
+                logger.error("Fehler beim Speichern des bearbeiteten Berichts:", error);
+                alert("Fehler: " + error.message);
+            }
+        }
+// Function to load and display absences in the dashboard card
+        async function ladeDashboardAbwesenheiten() {
+            const absencesTableBody = document.getElementById('dashboardAbsencesTable')?.querySelector('tbody');
+            if (!absencesTableBody) {
+                logger.warn("Dashboard Abwesenheitstabelle nicht im DOM gefunden beim Laden.");
+                return;
+            }
+            absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Lade Abwesenheiten...</td></tr>';
+            try {
+                const response = await fetch('/api/absences', { credentials: 'include' });
+                if (!response.ok) {
+                    if(response.status === 401) { window.location.href = '/login.html'; return; }
+                    throw new Error('Fehler beim Laden der Abwesenheiten.');
+                }
+                const result = await response.json();
+                if (result.success && result.absences) {
+                    absencesTableBody.innerHTML = '';
+                    if (result.absences.length === 0) {
+                        absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center">Keine Abwesenheiten erfasst.</td></tr>';
+                        return;
+                    }
+                    result.absences.forEach(absence => {
+                        const row = absencesTableBody.insertRow();
+                        row.insertCell().textContent = absence.abwesenheit_typ;
+                        const startDateParts = (absence.start_datum || "---").split('-');
+                        const formattedStartDate = startDateParts.length === 3 ? `${startDateParts[2]}.${startDateParts[1]}.${startDateParts[0]}` : absence.start_datum;
+                        row.insertCell().textContent = formattedStartDate;
+
+                        const endDateParts = (absence.end_datum || "---").split('-');
+                        const formattedEndDate = endDateParts.length === 3 ? `${endDateParts[2]}.${endDateParts[1]}.${endDateParts[0]}` : absence.end_datum;
+                        row.insertCell().textContent = formattedEndDate;
+
+                        row.insertCell().textContent = absence.beschreibung || '-';
+                        // No action buttons in the dashboard view
+                    });
+                } else {
+                    absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Abwesenheiten konnten nicht geladen werden.</td></tr>';
+                }
+            } catch (err) {
+                logger.error("Fehler ladeDashboardAbwesenheiten:", err);
+                absencesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Fehler beim Laden.</td></tr>';
+            }
+        }
+    </script>
+    <script>
+        // Add event listeners for the hint card
+        const hintCard = document.getElementById('benutzungHintCard'); // Select the hint card by its new ID
+        const closeHintCardButton = document.getElementById('closeHintCard');
+        const hintButton = document.getElementById('hintButton');
+
+        if (hintCard && closeHintCardButton) {
+            closeHintCardButton.addEventListener('click', () => {
+                hintCard.style.display = 'none';
+                localStorage.setItem('hintCardHidden', 'true'); // Remember state
+            });
+        }
+
+        if (hintButton && hintCard) {
+            hintButton.addEventListener('click', () => {
+                hintCard.style.display = 'block';
+                localStorage.removeItem('hintCardHidden'); // Remove hidden state
+            });
+        }
+
+        // Check local storage on load to see if the hint card should be hidden
+        if (hintCard && localStorage.getItem('hintCardHidden') === 'true') {
+            hintCard.style.display = 'none';
+        }
+
+        // Function to load vacation summary data for dashboard overview
+        async function ladeVacationSummary() {
+            try {
+                const response = await fetch('/api/users/me/profile', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Fehler beim Laden der Vacation-Daten (${response.status})`);
+                }
+                
+                const result = await response.json();
+                if (result.success && result.profile) {
+                    updateVacationSummary(result.profile);
+                }
+            } catch (err) {
+                logger.error("Fehler beim Laden der Vacation-Daten:", err);
+                // Keep showing "--" on error
+            }
+        }
+
+        // Function to update vacation summary display
+        function updateVacationSummary(profile) {
+            const totalElement = document.getElementById('totalVacationDays');
+            const usedElement = document.getElementById('usedVacationDays');
+            const remainingElement = document.getElementById('remainingVacationDays');
+            
+            if (totalElement) {
+                totalElement.textContent = profile.total_urlaubstage_annually || 0;
+            }
+            if (usedElement) {
+                usedElement.textContent = Math.round(profile.usedUrlaubstageThisYear || 0);
+            }
+            if (remainingElement) {
+                remainingElement.textContent = Math.round(profile.remainingUrlaubstage || 0);
+            }
+        }
+
+        // Add sorting click handlers for dashboard table
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait a bit for all elements to be rendered
+            setTimeout(() => {
+                document.querySelectorAll('#berichteBereich .sortable-header').forEach(header => {
+                    header.addEventListener('click', function() {
+                        const column = this.getAttribute('data-sort');
+                        
+                        console.log('Sorting by column:', column, 'Current sort:', dashboardCurrentSort);
+                        
+                        // Toggle direction if same column, otherwise start with descending
+                        if (dashboardCurrentSort.column === column) {
+                            dashboardCurrentSort.direction = dashboardCurrentSort.direction === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            dashboardCurrentSort.column = column;
+                            dashboardCurrentSort.direction = 'desc';
+                        }
+                        
+                        // Save sort state
+                        localStorage.setItem('dashboardBerichteSortState', JSON.stringify(dashboardCurrentSort));
+                        
+                        // Re-render with new sort
+                        if (dashboardReportEntriesData.length > 0) {
+                            zeigeBerichte(dashboardReportEntriesData);
+                        }
+                    });
+                });
+            }, 500);
+        });
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
