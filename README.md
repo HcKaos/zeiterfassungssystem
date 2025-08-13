@@ -1,4 +1,4 @@
-# Zeiterfassungssystem
+# Zeiterfassungssystem Für Praktikanten und/oder Mitarbeiter
 
 Ein deutsches Zeiterfassungs-Webanwendung für das Praktikantenmanagement in Unternehmen. Diese Full-Stack-Anwendung bietet umfassende Zeiterfassung, Abwesenheitsverwaltung und Berichtsfunktionen.
 
