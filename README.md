@@ -309,3 +309,4 @@ For issues and questions:
 - Open an issue on GitHub
 - Follow the development patterns established in the codebase
 - Review `DEPLOYMENT.md` for deployment instructions
+
